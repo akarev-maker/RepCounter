@@ -27,7 +27,8 @@ dist-ssr
 public/mediapipe
 .screenshots
 .testclips
-# Personal workout recordings in the project root
+# Personal workout recordings
+test-videos/
 /*.mov
 /*.MOV
 /*.mp4
