@@ -175,7 +175,7 @@ export function ResultsPanel(p: Props) {
                 </span>{' '}
                 {shallowReps.length === 1 ? 'Rep' : 'Reps'} {joinList(shallowReps.map((r) => String(r.index)))} reached{' '}
                 {joinList(shallowReps.map((r) => p.depth!.format(r.bottomAngle)))}
-                {p.depth.suffix}. They still count. Reference:{' '}
+                {p.depth.suffix}. They still count. Aim for{' '}
                 {p.depth.target}. {p.depth.explain}
               </>
             )}

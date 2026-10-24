@@ -178,15 +178,17 @@ export const EXERCISES: Record<string, ExerciseDef> = {
     minRepMs: 600,
     extendEnter: 92,
     depth: {
+      // How much the on-screen hip-to-ankle height shrank from standing. A
+      // video measurement, not a joint angle or a form judgement.
       format: (bottom) => `${Math.min(100, Math.max(0, Math.round(100 - bottom)))}%`,
       suffix: ' hip drop',
-      target: '35% hip drop',
-      explain: 'Hip drop is the reduction in your on-screen hip-to-ankle height from standing. Camera position affects it; it does not establish squat depth or form.',
-      good: 'Hip-drop reference reached',
-      full: 'the hip-drop reference',
-      cue: 'use a range check',
+      target: '35% hip drop or more',
+      explain: 'Hip drop is how much your hip-to-ankle height shrank on screen compared with standing. It is measured from the video, so camera position affects it.',
+      good: 'Good depth',
+      full: 'a 35% hip drop',
+      cue: 'go deeper',
     },
-    filmingHint: 'Counts each squat using hip movement and highlights smaller movements for review. Keep your whole body in frame, from the side or the front.',
+    filmingHint: 'Counts each squat from how far your hips drop, and flags reps that could go deeper. Keep your whole body in frame, from the side or the front.',
     defaults: { repRangeMin: 8, repRangeMax: 12, increment: 10, unit: 'lb' },
   },
   /**

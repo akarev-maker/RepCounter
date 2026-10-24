@@ -2,7 +2,7 @@
 
 Last updated: 2026-10-24. Separates what was actually run from what is assumed.
 
-## Automated unit tests (`npm test`, 77 passing)
+## Automated unit tests (`npm test`, 92 passing)
 
 `src/analysis/legMachines.test.ts`: leg press landmarks from a free Pexels
 clip through the real scoring path, and synthetic seated knee-angle traces for
@@ -154,9 +154,23 @@ New measure: hip-to-ankle height (vertical position only), as a percentage of
 that leg's tallest clearly visible height in the last 6 s. Standing reads
 about 100 for any camera placement; a parallel squat about 50. Rep starts at
 ≤ 85, counts after standing back to ≥ 92, flagged "go deeper" if the lowest
-value stays above 65, minimum rep 0.6 s. Shown as depth = (100 − value) × 2,
-capped at 100%. This is an on-screen measurement, not an anatomical depth
-claim; the UI says so.
+value stays above 65, minimum rep 0.6 s. This is an on-screen measurement,
+not an anatomical depth claim; the UI says so.
+
+Later changes (the 6 s window above was replaced):
+- A later commit (made with Codex) keeps the standing reference for the whole
+  video instead of the last 6 s. With the window, holding the bottom longer
+  than 6 s made the bottom the new "standing" height, and a rep counted while
+  the person was still down. The reference now only drops when the person
+  stands still at a new, shorter height (stepped back from the phone): for
+  2 s, or for 0.4 s with stricter stillness and posture checks.
+- The same commit requires the last two frames to be at the top before an
+  end-of-video rep counts, and changed the shown number to plain hip drop,
+  100 − value (the user's 76% "depth" rep reads 38% hip drop). It also
+  replaced the "go deeper" wording with "use a range check".
+- The user had asked for "go deeper", so it was restored, with "Good depth"
+  for full reps. The number stays as hip drop, and the explanation says it is
+  measured from the video. "Go deeper" shows below a 35% hip drop.
 
 Robustness (`src/analysis/squatRobustness.test.ts`, synthetic front-view
 poses), added after a review pointed out untested cases:

@@ -29,16 +29,17 @@ secure page: `localhost`, or the site served over https.
    guessing.
    - Curl: elbow (shoulder–elbow–wrist), bent ≤ 70°, straight ≥ 150°.
    - Squat: hip drop. The hip-to-ankle height (vertical position only) is
-     compared with the tallest it has been in the last 6 seconds, so
-     standing reads the same whatever the camera height, distance or angle.
-     Depth is shown as a percentage of on-screen hip drop: 100% means the
-     hip-to-ankle height halved. It is a video measurement, not a joint
-     angle. A rep counts at 30% and once you stand back up; reps that never
-     reach 70% still count but are marked "go deeper". Both legs are averaged
+     compared with your standing height, so standing reads the same whatever
+     the camera height, distance or angle. The standing height is kept for
+     the whole video, so holding the bottom of a squat never turns into
+     "standing". Hip drop is shown as a percentage: how much the on-screen
+     hip-to-ankle height shrank. It is a video measurement, not a joint angle.
+     A rep counts at a 15% hip drop once you stand back up; reps that never
+     reach 35% still count but are marked "go deeper". Both legs are averaged
      when both are clearly visible; otherwise the more visible leg is used.
      Stepping back from the phone after starting a recording does not count
-     as a rep: once you stand still for 2 s, that becomes the new standing
-     height.
+     as a rep: once you stand still at the new distance, that becomes the
+     new standing height.
    - Leg press: knee angle from the side. A rep counts from a bend to 125°
      and back up to 145°; presses that never reach 100° still count but are
      marked "go deeper".
