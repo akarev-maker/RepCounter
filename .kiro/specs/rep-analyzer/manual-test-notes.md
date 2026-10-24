@@ -158,7 +158,7 @@ value stays above 65, minimum rep 0.6 s. This is an on-screen measurement,
 not an anatomical depth claim; the UI says so.
 
 Later changes (the 6 s window above was replaced):
-- A later commit (made with Codex) keeps the standing reference for the whole
+- A later commit keeps the standing reference for the whole
   video instead of the last 6 s. With the window, holding the bottom longer
   than 6 s made the bottom the new "standing" height, and a rep counted while
   the person was still down. The reference now only drops when the person
