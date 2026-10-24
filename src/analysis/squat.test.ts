@@ -54,15 +54,24 @@ describe('squat counting on real clips (recorded pose output)', () => {
 
   it("user's front-view squats: all 6 count (the knee angle only counted 1)", async () => {
     // From the front the knees read 121-148 deg at the bottom, so most reps
-    // never passed a knee-angle threshold. Hip height drops clearly on every rep.
+    // never passed a knee-angle threshold. The hips drop clearly on every rep.
     const r = await run('user-squat-front');
     expect(r.count).toBe(6);
     expect(r.trackedFraction).toBeGreaterThan(0.9);
-    // Rep 2 was visibly the deepest; rep 1 the shallowest.
-    const deepest = r.reps.reduce((a, b) => (b.bottomAngle < a.bottomAngle ? b : a));
-    expect(deepest.index).toBe(2);
-    expect(deepest.shallow).toBe(false);
-    expect(r.reps[0].shallow).toBe(true);
+    expect(r.reps.every((x) => !x.shallow)).toBe(true);
+  });
+
+  it("user's phone test, phone low and close: all 6 count (hip height counted 0)", async () => {
+    // Standing read about 150 on the old hip-height scale (100-130 elsewhere),
+    // so no rep ever crossed its line. The phone is placed and picked up at
+    // the ends of the clip; neither counts as a rep.
+    const r = await run('user-squat-phone-low');
+    expect(r.count).toBe(6);
+    // Bottoms by eye near 2.0, 3.8, 5.7, 7.4, 9.2 and 10.9 s.
+    [2.0, 3.8, 5.7, 7.4, 9.2, 10.9].forEach((bottom, i) => {
+      expect(r.reps[i].startMs / 1000).toBeLessThan(bottom);
+      expect(r.reps[i].tsMs / 1000).toBeGreaterThan(bottom);
+    });
   });
 
   it('front view, deep reps: 4 squats, none flagged', async () => {

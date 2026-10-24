@@ -72,13 +72,13 @@ export interface ExerciseDef {
   /**
    * What the counter tracks for each frame (lower = deeper in the rep):
    * - 'angle': the joint angle in degrees at the middle landmark.
-   * - 'hipHeight': how far the hips sit above the knees, as a percentage of
-   *   shin length (knee to ankle), using vertical image position only.
-   *   About 100-130 standing, 0 with the hips level with the knees. Unlike
-   *   the knee angle, it still changes clearly when filmed from the front,
-   *   where the thigh points at the camera and the knee looks straight.
+   * - 'hipDrop': hip-to-ankle height (vertical image position only) as a
+   *   percentage of that leg's tallest height in the last `HIP_DROP_WINDOW_MS`.
+   *   Standing reads about 100 whatever the camera height, distance or angle,
+   *   and a squat to parallel about 50. It ignores the knee, which MediaPipe
+   *   places badly when the phone is low and in front.
    */
-  measure: 'angle' | 'hipHeight';
+  measure: 'angle' | 'hipDrop';
   /**
    * For movements that rest bent (leg extension), a rep is bent -> straight
    * -> bent, and counts when the joint bends back to `flexEnter`. Reps that
@@ -136,12 +136,13 @@ export const EXERCISES: Record<string, ExerciseDef> = {
     defaults: { repRangeMin: 8, repRangeMax: 12, increment: 5, unit: 'lb' },
   },
   /**
-   * Hip height above the knees, in shin lengths x 100 (see `measure`).
-   * The knee angle was tried first, but a user filming from the front at hip
-   * height did six real squats that read 121-148 deg, and only one counted.
-   * The same clip reads about 115 standing and 30-77 at the bottoms, and six
-   * free Pexels clips (front, side, three-quarter) read 100-130 standing and
-   * -10 to 60 at the bottoms. See manual-test-notes.md.
+   * Hip drop (see `measure`). Two earlier measures failed on the user's own
+   * front-view clips:
+   * - Knee angle: six real squats read 121-148 deg; only one counted.
+   * - Hip height above the knee (in shin lengths): with the phone low and
+   *   close, standing read about 150 instead of 100-130, so no rep counted.
+   * Hip drop counts all 8 recorded clips correctly. Bottoms read 41-55 on
+   * full squats and 58-68 on the visibly shallow ones. See manual-test-notes.md.
    */
   squat: {
     id: 'squat',
@@ -149,7 +150,7 @@ export const EXERCISES: Record<string, ExerciseDef> = {
     joint: 'knee',
     limb: 'leg',
     sided: false,
-    measure: 'hipHeight',
+    measure: 'hipDrop',
     weightNote: 'total load, 0 for bodyweight',
     loadSuffix: '',
     allowBodyweight: true,
@@ -163,17 +164,20 @@ export const EXERCISES: Record<string, ExerciseDef> = {
       left: [LM.LEFT_HIP, LM.LEFT_KNEE, LM.LEFT_ANKLE],
       right: [LM.RIGHT_HIP, LM.RIGHT_KNEE, LM.RIGHT_ANKLE],
     },
-    flexEnter: 80,
-    // Known shallow rep: 61. Deep reps on the Pexels clips: 50 or lower.
-    fullDepth: 55,
+    // Every clip counted correctly from 80-88 here and 90-94 for standing.
+    flexEnter: 85,
+    // The one visibly shallow rep read 68; full squats filmed from the front
+    // read up to 64. Little margin either way.
+    fullDepth: 65,
     minRepMs: 600,
-    // Standing reads 100-130 on every clip so far.
-    extendEnter: 95,
+    extendEnter: 92,
     depth: {
-      format: (bottom) => `${Math.max(0, Math.round(100 - bottom))}%`,
+      // 100% = hips dropped by half the standing hip-to-ankle height, which
+      // is about parallel. Deeper than that still shows 100%.
+      format: (bottom) => `${Math.min(100, Math.max(0, Math.round((100 - bottom) * 2)))}%`,
       suffix: ' depth',
-      target: '45% depth or more',
-      explain: '100% means your hips came down level with your knees.',
+      target: '70% depth or more',
+      explain: '100% is about thighs parallel to the floor.',
       good: 'Good depth',
       full: 'full depth',
       cue: 'go deeper',

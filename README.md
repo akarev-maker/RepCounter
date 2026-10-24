@@ -28,11 +28,12 @@ secure page: `localhost`, or the site served over https.
    return to extension. Low-confidence frames pause counting rather than
    guessing.
    - Curl: elbow (shoulder–elbow–wrist), bent ≤ 70°, straight ≥ 150°.
-   - Squat: hip height, using only the vertical positions of hip, knee and
-     ankle, so it works filmed from the side or the front. Depth is shown as
-     a percentage: 100% means the hips came down level with the knees. A rep
-     counts at 20% depth and once you stand back up; reps that never reach
-     45% still count but are marked "go deeper". Both legs are averaged when
+   - Squat: hip drop. The hip-to-ankle height (vertical position only) is
+     compared with the tallest it has been in the last 6 seconds, so
+     standing reads the same whatever the camera height, distance or angle.
+     Depth is shown as a percentage: 100% is about thighs parallel. A rep
+     counts at 30% depth and once you stand back up; reps that never reach
+     70% still count but are marked "go deeper". Both legs are averaged when
      both are clearly visible; otherwise the more visible leg is used.
    - Leg press: knee angle from the side. A rep counts from a bend to 125°
      and back up to 145°; presses that never reach 100° still count but are

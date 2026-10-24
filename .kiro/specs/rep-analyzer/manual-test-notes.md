@@ -2,7 +2,7 @@
 
 Last updated: 2026-10-24. Separates what was actually run from what is assumed.
 
-## Automated unit tests (`npm test`, 60 passing)
+## Automated unit tests (`npm test`, 61 passing)
 
 `src/analysis/legMachines.test.ts`: leg press landmarks from a free Pexels
 clip through the real scoring path, and synthetic seated knee-angle traces for
@@ -141,9 +141,46 @@ lowest value stays above 55 (below 45% depth), minimum rep 0.6 s.
 Rejected: standing line at 90 instead of 95. The user's rep 1 then lasted
 under 0.6 s and was dropped.
 
-Not verified: the original (non-screen-recorded) clip, and whether 45% is the right "good depth" line for most people. The 45% line
-comes from the Pexels clips: the visibly shallow rep read 39% and deep reps
-read 50% or more.
+## Squat by hip drop (replaces hip height)
+
+Hip height failed on the user's first real phone test
+(`Squats_phone_test.MP4`, a phone screen recording of the live app, front
+view, phone propped low and close, wide lens). Standing read about 150 on
+that scale instead of 100–130, and the bottoms only came down to about 95–
+100, so **0** reps counted. The knee landmark was also placed badly from that
+angle (it stays close to the hip on one leg).
+
+New measure: hip-to-ankle height (vertical position only), as a percentage of
+that leg's tallest clearly visible height in the last 6 s. Standing reads
+about 100 for any camera placement; a parallel squat about 50. Rep starts at
+≤ 85, counts after standing back to ≥ 92, flagged "go deeper" if the lowest
+value stays above 65, minimum rep 0.6 s. Shown as depth = (100 − value) × 2,
+capped at 100% (about parallel).
+
+Picked by replaying all 8 recorded squat fixtures offline:
+
+- Every clip was counted correctly for windows of 4, 6, 8 and 10 s, and for
+  start lines 80–88 with standing lines 90–94.
+- Using one shared reference for both legs (instead of one per leg) failed
+  on the three-quarter clip with a 6 s window, so each leg keeps its own.
+- The "go deeper" line has little margin. The one visibly shallow rep reads
+  68, and full squats filmed from the front read up to 64, so the line sits
+  at 65.
+
+| Clip | True count | Detected (browser, local build, 390×844) | Bottoms |
+|---|---|---|---|
+| User's phone test, phone low and close | 6 (read from the hip/shoulder trace; **not yet confirmed by the user**) | **6** (hip height: 0) | 64, 54, 49, 51, 52, 55; none flagged |
+| User's front-view recording | 6 (confirmed) | **6** | 52, 43, 43, 47, 53, 53; none flagged (hip height flagged rep 1) |
+| Pexels 9001924 (side) | 3 | **3** | |
+| Pexels 8435486 (one visibly shallow rep) | 3 | **3** | rep 1 (68) flagged |
+| Other Pexels fixtures (three-quarter, front cut-off, front deep, knees out of frame) | 5, 2, 4, 0 | same (unit tests) | none flagged |
+
+Known limit: if tracking starts partway down the first squat, that rep's
+standing height is underestimated, so its depth reads lower than it was (the
+phone test's rep 1 reads 64, close to the line).
+
+Not verified: the original (non-screen-recorded) clips, a side view filmed
+by the user, and whether 70% is the right "good depth" line for most people.
 
 ## Leg press and leg extension (knee angle, side view)
 

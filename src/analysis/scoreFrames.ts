@@ -36,7 +36,10 @@ export function createScorer(exercise: ExerciseDef, side: Side | null, aspect: n
     minVisibility: MIN_VISIBILITY,
   });
 
-  const measure = (pf: PoseFrame, [iA, iB, iC]: [number, number, number]) => {
+  // Recent clearly visible hip-to-ankle heights per limb, for 'hipDrop'.
+  const heights = triplets.map(() => [] as { tMs: number; h: number }[]);
+
+  const measure = (pf: PoseFrame, [iA, iB, iC]: [number, number, number], limb: number) => {
     const a = pf.lms?.[iA];
     const b = pf.lms?.[iB];
     const c = pf.lms?.[iC];
@@ -44,8 +47,9 @@ export function createScorer(exercise: ExerciseDef, side: Side | null, aspect: n
     const pts: [Pt, Pt, Pt] = [a, b, c];
     const deg = jointAngle(a, b, c, aspect);
     const angle = Number.isNaN(deg) ? null : deg;
-    const value = exercise.measure === 'hipHeight' ? hipHeight(a, b, c) : angle;
-    return { pts, angle, value, vis: minVisibility(pts) };
+    const vis = minVisibility(pts);
+    const value = exercise.measure === 'hipDrop' ? hipDrop(heights[limb], pf.tMs, a, c, vis >= MIN_VISIBILITY) : angle;
+    return { pts, angle, value, vis };
   };
 
   const score = (pf: PoseFrame): AnalyzedFrame => {
@@ -53,7 +57,7 @@ export function createScorer(exercise: ExerciseDef, side: Side | null, aspect: n
     // front, one knee often reads 10-15 deg straighter than the other.
     // Otherwise use the most visible limb (if that is below the visibility
     // bar, the counter treats the frame as low confidence).
-    const ms = triplets.map((t) => measure(pf, t)).filter((m) => m !== null);
+    const ms = triplets.map((t, i) => measure(pf, t, i)).filter((m) => m !== null);
     const good = ms.filter((m) => m.value !== null && m.vis >= MIN_VISIBILITY);
     const best = ms.reduce<(typeof ms)[number] | null>((b, m) => (!b || m.vis > b.vis ? m : b), null);
     const pts = best?.pts ?? null;
@@ -64,7 +68,7 @@ export function createScorer(exercise: ExerciseDef, side: Side | null, aspect: n
     const snap = counter.push({ tsMs: pf.tMs, angle: fed, minVisibility: vis });
     let label: string | null = null;
     if (value !== null) {
-      label = exercise.measure === 'hipHeight' && exercise.depth ? `${exercise.depth.format(value)} depth` : `${Math.round(value)}\u00b0`;
+      label = exercise.measure === 'hipDrop' && exercise.depth ? `${exercise.depth.format(value)} depth` : `${Math.round(value)}\u00b0`;
     }
     return {
       tMs: pf.tMs,
@@ -79,15 +83,31 @@ export function createScorer(exercise: ExerciseDef, side: Side | null, aspect: n
   return { score, reps: (): RepEvent[] => counter.snapshot().reps };
 }
 
+/** How far back 'hipDrop' looks for the standing height. */
+export const HIP_DROP_WINDOW_MS = 6000;
+
 /**
- * Hip height above the knee as a percentage of shin length, from vertical
- * image positions only (y grows downward). Null when the shin is too short
- * on screen to measure, e.g. the legs are out of frame or the person is lying down.
+ * Hip-to-ankle height (vertical image position, y grows downward) as a
+ * percentage of the tallest clearly visible height for this limb in the last
+ * HIP_DROP_WINDOW_MS. Standing reads about 100 and parallel about 50, for
+ * any camera height or distance. `recent` is this limb's history; only
+ * clearly visible frames are added to it. Null when the legs are too short
+ * on screen to measure or there is no history yet.
  */
-export function hipHeight(hip: Pt, knee: Pt, ankle: Pt): number | null {
-  const shin = ankle.y - knee.y;
-  if (shin < 0.02) return null;
-  return ((knee.y - hip.y) / shin) * 100;
+export function hipDrop(
+  recent: { tMs: number; h: number }[],
+  tMs: number,
+  hip: Pt,
+  ankle: Pt,
+  visible: boolean,
+): number | null {
+  const h = ankle.y - hip.y;
+  if (h < 0.02) return null;
+  if (visible) recent.push({ tMs, h });
+  while (recent.length && recent[0].tMs < tMs - HIP_DROP_WINDOW_MS) recent.shift();
+  if (!recent.length) return null;
+  const tallest = recent.reduce((m, r) => Math.max(m, r.h), 0);
+  return (h / tallest) * 100;
 }
 
 export function scoreFrames(
