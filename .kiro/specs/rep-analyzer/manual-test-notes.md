@@ -2,7 +2,11 @@
 
 Last updated: 2026-10-24. Separates what was actually run from what is assumed.
 
-## Automated unit tests (`npm test`, 52 passing)
+## Automated unit tests (`npm test`, 57 passing)
+
+`src/analysis/legMachines.test.ts`: leg press landmarks from a free Pexels
+clip through the real scoring path, and synthetic seated knee-angle traces for
+leg extension (no real leg extension clip has been tested).
 
 Includes recorded angle sequences from six real clips: the Pexels clip (4 reps,
 left arm), the user's first iPhone clip (6 reps, right arm), and the user's four
@@ -140,6 +144,22 @@ under 0.6 s and was dropped.
 Not verified: the original (non-screen-recorded) clip, and whether 45% is the right "good depth" line for most people. The 45% line
 comes from the Pexels clips: the visibly shallow rep read 39% and deep reps
 read 50% or more.
+
+## Leg press and leg extension (knee angle, side view)
+
+Leg press: bent ≤ 110°, straight ≥ 145°, minimum rep 0.6 s. Leg extension
+rests bent, so its angle is flipped before counting: a rep is ≤ 115°, then
+≥ 145°, then back to ≤ 115°, and the rep is logged when the legs come back
+down.
+
+| Clip | True count | Detected | Notes |
+|---|---|---|---|
+| Pexels 32239225 leg press (25.1 s, 4K, reclined, side view; scaled to 1280 wide) | 6 presses, the first already under way when the clip starts | **5** | Reps at 0:04.1, 0:08.6, 0:12.8, 0:17.3, 0:22.0. Bottoms 70–90°, tops 145–179°. The first press has no visible start, so it is not counted (same rule as all exercises). Legs visible in 100% of frames. Same at 390×844 mobile; overlay sits on the near leg. Replay unchanged. |
+| Leg extension | — | — | **No free clip found.** Only synthetic traces were tested (3 full reps = 3; lifts to 135° = 0; a clip starting straight does not count the first lowering). |
+
+The 145° top for leg press was chosen because some presses on the clip
+pause at 145–150° on the way up. A heavier set with a shorter range, or a
+machine that hides the hip or ankle, has not been tested.
 
 ## In-browser recording (headless Chrome, fake camera)
 

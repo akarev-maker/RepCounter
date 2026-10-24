@@ -34,6 +34,10 @@ secure page: `localhost`, or the site served over https.
      counts at 20% depth and once you stand back up; reps that never reach
      45% still count but are marked "go deeper". Both legs are averaged when
      both are clearly visible; otherwise the more visible leg is used.
+   - Leg press: knee angle from the side, bent ≤ 110°, straight ≥ 145°.
+   - Leg extension: knee angle from the side. It starts bent, so a rep is
+     bent (≤ 115°), straight (≥ 145°), and back to bent. Not yet tested on
+     real video.
 3. Each rep gets a timestamp you can click to jump to it in the video.
 4. The next-set target uses double progression: add reps within your range, and
    add weight only after hitting the top of the range on two sets in a row.
@@ -43,12 +47,13 @@ secure page: `localhost`, or the site served over https.
 ## Supported
 
 - Exercises: dumbbell curl (one arm, or both arms together or alternating),
-  and squat (bodyweight or loaded).
+  squat (bodyweight or loaded), leg press and leg extension.
 - Video: anything the browser can decode. iPhone `.mov` (HEVC) works in Chrome
   and Safari on macOS; Firefox can't decode HEVC.
 - Filming: phone held still. Curls need the shoulder and torso in frame, and
   front-facing is best for both-arm sets. Squats need hips, knees and ankles
-  in frame; side, three-quarter and front views all work.
+  in frame; side, three-quarter and front views all work. Leg machines need
+  a side view with hip, knee and ankle in frame.
 
 ## Run it
 

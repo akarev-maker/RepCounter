@@ -25,11 +25,14 @@ export function createScorer(exercise: ExerciseDef, side: Side | null, aspect: n
   const triplets = exercise.sided
     ? [tripletFor(exercise, side)]
     : [exercise.landmarks.left, exercise.landmarks.right];
+  // The counter expects reps to start and end at a high value. For movements
+  // that rest bent, feed it 180 - angle so "bent" becomes the high end.
+  const flip = !!exercise.startsBent;
   const counter = new RepCounter({
-    flexEnter: exercise.flexEnter,
+    flexEnter: flip ? 180 - exercise.extendEnter : exercise.flexEnter,
     fullDepth: exercise.fullDepth,
     minRepMs: exercise.minRepMs,
-    extendEnter: exercise.extendEnter,
+    extendEnter: flip ? 180 - exercise.flexEnter : exercise.extendEnter,
     minVisibility: MIN_VISIBILITY,
   });
 
@@ -57,7 +60,8 @@ export function createScorer(exercise: ExerciseDef, side: Side | null, aspect: n
     const value =
       good.length > 1 ? good.reduce((sum, m) => sum + m.value!, 0) / good.length : (best?.value ?? null);
     const vis = best?.vis ?? 0;
-    const snap = counter.push({ tsMs: pf.tMs, angle: value, minVisibility: vis });
+    const fed = value !== null && flip ? 180 - value : value;
+    const snap = counter.push({ tsMs: pf.tMs, angle: fed, minVisibility: vis });
     let label: string | null = null;
     if (value !== null) {
       label = exercise.measure === 'hipHeight' && exercise.depth ? `${exercise.depth.format(value)} depth` : `${Math.round(value)}\u00b0`;

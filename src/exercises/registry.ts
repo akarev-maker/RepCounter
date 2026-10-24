@@ -61,6 +61,12 @@ export interface ExerciseDef {
    *   where the thigh points at the camera and the knee looks straight.
    */
   measure: 'angle' | 'hipHeight';
+  /**
+   * For movements that rest bent (leg extension), a rep is bent -> straight
+   * -> bent, and counts when the joint bends back to `flexEnter`. Thresholds
+   * stay in real joint angles; the scorer flips them (180 - x) for the counter.
+   */
+  startsBent?: boolean;
   /** Value at or below this = bottom position reached; the rep counts. */
   flexEnter: number;
   /**
@@ -158,6 +164,71 @@ export const EXERCISES: Record<string, ExerciseDef> = {
     },
     filmingHint: 'Counts each squat from how far your hips drop, and flags reps that could go deeper. Keep your whole body in frame, from the side or the front.',
     defaults: { repRangeMin: 8, repRangeMax: 12, increment: 10, unit: 'lb' },
+  },
+  /**
+   * Knee angle, filmed from the side. Starts with the legs straight, bends,
+   * and counts when the legs straighten again. On a free Pexels clip
+   * (reclined machine, side view) the bottoms read 70-90 deg and the tops
+   * 145-179 deg, with some reps pausing at 145-150 on the way up.
+   */
+  'leg-press': {
+    id: 'leg-press',
+    label: 'Leg Press',
+    joint: 'knee',
+    limb: 'leg',
+    sided: false,
+    measure: 'angle',
+    weightNote: 'total on the machine',
+    loadSuffix: '',
+    allowBodyweight: false,
+    framingAdvice: 'Tracking needs your hip, knee and ankle in frame from the side, with the phone held still.',
+    filmingTips: [
+      { t: 'Film from the side', d: 'Set the phone square to the machine so your knee bend is seen side-on.' },
+      { t: 'Hip to ankle in frame', d: 'Step the phone back far enough that hip, knee and ankle stay visible at the bottom and top.' },
+      { t: 'Steady phone', d: 'Prop it on the floor or a bench. The near leg is the one that gets tracked.' },
+    ],
+    landmarks: {
+      left: [LM.LEFT_HIP, LM.LEFT_KNEE, LM.LEFT_ANKLE],
+      right: [LM.RIGHT_HIP, LM.RIGHT_KNEE, LM.RIGHT_ANKLE],
+    },
+    flexEnter: 110,
+    minRepMs: 600,
+    extendEnter: 145,
+    filmingHint: 'Counts a rep each time your knees bend to 110\u00b0 or less and straighten back to 145\u00b0 or more. Film from the side.',
+    defaults: { repRangeMin: 8, repRangeMax: 12, increment: 10, unit: 'lb' },
+  },
+  /**
+   * Knee angle, filmed from the side, starting bent (seated). Not yet tested
+   * on real video; thresholds are an estimate (seated start is usually about
+   * 80-100 deg, the top 150-175 deg).
+   */
+  'leg-extension': {
+    id: 'leg-extension',
+    label: 'Leg Extension',
+    joint: 'knee',
+    limb: 'leg',
+    sided: false,
+    measure: 'angle',
+    startsBent: true,
+    weightNote: 'machine weight',
+    loadSuffix: '',
+    allowBodyweight: false,
+    framingAdvice: 'Tracking needs your hip, knee and ankle in frame from the side, with the phone held still.',
+    filmingTips: [
+      { t: 'Film from the side', d: 'Set the phone square to the machine so your knee bend is seen side-on.' },
+      { t: 'Hip to ankle in frame', d: 'Keep hip, knee and ankle visible with your legs bent and straight.' },
+      { t: 'Steady phone', d: 'Prop it on the floor or a bench, a couple of steps away. The near leg is the one that gets tracked.' },
+    ],
+    landmarks: {
+      left: [LM.LEFT_HIP, LM.LEFT_KNEE, LM.LEFT_ANKLE],
+      right: [LM.RIGHT_HIP, LM.RIGHT_KNEE, LM.RIGHT_ANKLE],
+    },
+    // Rest (bent) at 115 deg or less; a rep must straighten to 145 deg or more.
+    flexEnter: 115,
+    minRepMs: 600,
+    extendEnter: 145,
+    filmingHint: 'Counts a rep each time your legs straighten to 145\u00b0 or more and lower back to 115\u00b0 or less. Film from the side.',
+    defaults: { repRangeMin: 8, repRangeMax: 12, increment: 5, unit: 'lb' },
   },
 };
 
