@@ -76,13 +76,27 @@ export function SetupPanel(p: Props) {
                   }`}
                 >
                   {x.label}
+                  {x.beta && (
+                    <span
+                      className={`ml-1.5 rounded px-1 py-px align-middle text-[10px] font-bold uppercase tracking-wide ${
+                        active ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'
+                      }`}
+                    >
+                      Beta
+                    </span>
+                  )}
                 </button>
               );
             })}
           </div>
         </div>
 
-        {!def.sided && <p className="-mt-1 text-xs leading-relaxed text-ink-3">{def.filmingHint}</p>}
+        {!def.sided && (
+          <p className="-mt-1 text-xs leading-relaxed text-ink-3">
+            {def.beta && <span className="font-semibold text-amber-800">Beta: not yet reliable on real gym video. Check the count. </span>}
+            {def.filmingHint}
+          </p>
+        )}
 
         {def.sided && (
           <div>

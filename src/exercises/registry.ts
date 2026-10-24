@@ -45,6 +45,8 @@ export interface ExerciseDef {
   joint: Joint;
   /** Body part named in the UI ("arm", "leg"). */
   limb: 'arm' | 'leg';
+  /** Not yet reliable on real video; labelled "Beta" in the UI. */
+  beta?: boolean;
   /**
    * Whether the user picks a side (left/right). Exercises that are not sided
    * use both sides of the body together: each frame is measured on the more
@@ -202,6 +204,8 @@ export const EXERCISES: Record<string, ExerciseDef> = {
     label: 'Leg Press',
     joint: 'knee',
     limb: 'leg',
+    // The user's own gym clip failed: phone low and close, the sled hid the legs.
+    beta: true,
     sided: false,
     measure: 'angle',
     weightNote: 'total on the machine',
@@ -247,6 +251,8 @@ export const EXERCISES: Record<string, ExerciseDef> = {
     label: 'Leg Extension',
     joint: 'knee',
     limb: 'leg',
+    // Never tested on real video.
+    beta: true,
     sided: false,
     measure: 'angle',
     startsBent: true,

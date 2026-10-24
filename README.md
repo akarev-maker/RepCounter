@@ -56,7 +56,10 @@ secure page: `localhost`, or the site served over https.
 ## Supported
 
 - Exercises: dumbbell curl (one arm, or both arms together or alternating),
-  squat (bodyweight or loaded), leg press and leg extension.
+  squat (bodyweight or loaded), plus leg press and leg extension in beta.
+  Leg press counts a free side-view clip correctly but failed on the author's
+  own gym clip (phone low and close, the sled hid the legs); leg extension has
+  not been tested on real video.
 - Video: anything the browser can decode. iPhone `.mov` (HEVC) works in Chrome
   and Safari on macOS; Firefox can't decode HEVC.
 - Filming: phone held still. Curls need the shoulder and torso in frame, and
