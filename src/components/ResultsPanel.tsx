@@ -1,10 +1,11 @@
-import type { Effort, RepEvent, Side, Unit } from '../types';
+import type { Effort, ProgressionSettings, RepEvent, Side, Unit } from '../types';
 import type { OtherSideHint } from '../analysis/scoreFrames';
 import { armBalance } from '../counting/balance';
 import { armColor } from '../analysis/drawOverlay';
 import { formatTime } from './formatTime';
 import { IconCheck, IconMinus, IconPlus } from './icons';
 import { Button, Card, Notice, SectionLabel, Segmented } from './ui';
+import { RepRangePicker } from './RepRangePicker';
 
 /** Result for one counted arm, as shown in the panel. */
 export interface ArmResultView {
@@ -27,6 +28,12 @@ export const EFFORTS: { value: Effort; label: string; hint: string }[] = [
 
 interface Props {
   arms: ArmResultView[];
+  /** Body part being tracked, for wording ("arm", "leg"). */
+  limb: 'arm' | 'leg';
+  weightNote: string;
+  allowBodyweight: boolean;
+  settings: ProgressionSettings;
+  onSettings: (s: ProgressionSettings) => void;
   onCountChange: (armIndex: number, n: number) => void;
   hint: OtherSideHint | null;
   onApplyHint: (h: OtherSideHint) => void;
@@ -47,7 +54,10 @@ interface Props {
 export function ResultsPanel(p: Props) {
   const multi = p.arms.length > 1;
   const weightNum = Number(p.weight);
-  const weightOk = p.weight.trim() !== '' && Number.isFinite(weightNum) && weightNum > 0;
+  const weightOk =
+    p.weight.trim() !== '' && Number.isFinite(weightNum) && (weightNum > 0 || (p.allowBodyweight && weightNum === 0));
+  const Limb = p.limb === 'arm' ? 'Arm' : 'Legs';
+  const single = p.limb === 'arm' ? 'arm' : 'legs';
   const missing = [!weightOk && 'weight', !p.effort && 'effort'].filter(Boolean);
 
   const right = p.arms.find((a) => a.side === 'right');
@@ -102,7 +112,7 @@ export function ResultsPanel(p: Props) {
             </>
           ) : (
             <>
-              Arm clearly visible in{' '}
+              {Limb} clearly visible in{' '}
               <span className="font-semibold tabular-nums text-ink">{Math.round((p.arms[0]?.trackedFraction ?? 0) * 100)}%</span>{' '}
               of analyzed frames.
             </>
@@ -134,8 +144,8 @@ export function ResultsPanel(p: Props) {
           <div className="mt-3">
             <Notice tone="warn">
               {lostArms.length > 0
-                ? `Tracking was lost on the ${multi ? lostArms.map((a) => a.side).join(' and ') + ' arm' : 'arm'} during the clip (shaded on the timeline). Reps in progress at that moment were not counted, so check the total.`
-                : `The ${multi ? lowVisArms.map((a) => a.side).join(' and ') + ' arm was' : 'arm was'} hard to see for much of the clip, so check the total before saving.`}
+                ? `Tracking was lost on the ${multi ? lostArms.map((a) => a.side).join(' and ') + ' arm' : single} during the clip (shaded on the timeline). Reps in progress at that moment were not counted, so check the total.`
+                : `The ${multi ? lowVisArms.map((a) => a.side).join(' and ') + ' arm was' : single + (p.limb === 'arm' ? ' was' : ' were')} hard to see for much of the clip, so check the total before saving.`}
             </Notice>
           </div>
         )}
@@ -180,7 +190,7 @@ export function ResultsPanel(p: Props) {
           <div>
             <label htmlFor="weight" className="mb-2 flex items-baseline justify-between text-sm font-medium">
               Weight
-              <span className="text-xs font-normal text-ink-3">per dumbbell</span>
+              <span className="text-xs font-normal text-ink-3">{p.weightNote}</span>
             </label>
             <div className="flex gap-2">
               <input
@@ -191,7 +201,7 @@ export function ResultsPanel(p: Props) {
                 step="any"
                 value={p.weight}
                 onChange={(e) => p.onWeight(e.target.value)}
-                placeholder="e.g. 25"
+                placeholder={p.allowBodyweight ? 'e.g. 95, or 0' : 'e.g. 25'}
                 className="h-11 min-w-0 flex-1 rounded-xl border border-line-strong bg-surface px-3.5 text-[15px] font-semibold tabular-nums outline-none transition placeholder:font-normal placeholder:text-ink-3 focus:border-ink focus:ring-4 focus:ring-black/5"
               />
               <div className="w-28 shrink-0">
@@ -205,6 +215,14 @@ export function ResultsPanel(p: Props) {
                 />
               </div>
             </div>
+          </div>
+
+          <div>
+            <p className="mb-2 flex items-baseline justify-between text-sm font-medium">
+              Rep range
+              <span className="text-xs font-normal text-ink-3">sets your next target</span>
+            </p>
+            <RepRangePicker settings={p.settings} onSettings={p.onSettings} disabled={p.saved} />
           </div>
 
           <div>

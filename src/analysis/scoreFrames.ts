@@ -19,26 +19,40 @@ export interface ScoredResult {
  * side. Pure apart from the RepCounter state it owns; no DOM or MediaPipe.
  */
 export function createScorer(exercise: ExerciseDef, side: Side | null, aspect: number) {
-  const [iA, iB, iC] = tripletFor(exercise, side);
+  // Sided exercises measure one fixed limb. Others (squat) measure whichever
+  // side is more visible in each frame: from the side, the far leg is hidden
+  // and MediaPipe guesses it, so the near leg is the one to trust.
+  const triplets = exercise.sided
+    ? [tripletFor(exercise, side)]
+    : [exercise.landmarks.left, exercise.landmarks.right];
   const counter = new RepCounter({
     flexEnter: exercise.flexEnter,
     extendEnter: exercise.extendEnter,
     minVisibility: MIN_VISIBILITY,
   });
 
-  const score = (pf: PoseFrame): AnalyzedFrame => {
+  const measure = (pf: PoseFrame, [iA, iB, iC]: [number, number, number]) => {
     const a = pf.lms?.[iA];
     const b = pf.lms?.[iB];
     const c = pf.lms?.[iC];
-    let pts: [Pt, Pt, Pt] | null = null;
-    let angle: number | null = null;
-    let vis = 0;
-    if (a && b && c) {
-      pts = [a, b, c];
-      const deg = jointAngle(a, b, c, aspect);
-      angle = Number.isNaN(deg) ? null : deg;
-      vis = minVisibility(pts);
-    }
+    if (!a || !b || !c) return null;
+    const pts: [Pt, Pt, Pt] = [a, b, c];
+    const deg = jointAngle(a, b, c, aspect);
+    return { pts, angle: Number.isNaN(deg) ? null : deg, vis: minVisibility(pts) };
+  };
+
+  const score = (pf: PoseFrame): AnalyzedFrame => {
+    // When both limbs are clearly visible, average their angles: from the
+    // front, one knee often reads 10-15 deg straighter than the other.
+    // Otherwise use the most visible limb (if that is below the visibility
+    // bar, the counter treats the frame as low confidence).
+    const ms = triplets.map((t) => measure(pf, t)).filter((m) => m !== null);
+    const good = ms.filter((m) => m.angle !== null && m.vis >= MIN_VISIBILITY);
+    const best = ms.reduce<(typeof ms)[number] | null>((b, m) => (!b || m.vis > b.vis ? m : b), null);
+    const pts = best?.pts ?? null;
+    const angle =
+      good.length > 1 ? good.reduce((sum, m) => sum + m.angle!, 0) / good.length : (best?.angle ?? null);
+    const vis = best?.vis ?? 0;
     const snap = counter.push({ tsMs: pf.tMs, angle, minVisibility: vis });
     return {
       tMs: pf.tMs,

@@ -163,7 +163,8 @@ function LoadedStage({
       }
       const h: HudArm[] = tracks.map((t, i) => ({
         side: t.side,
-        count: frames[i]?.count ?? 0,
+        // Past the last sampled frame (the clip's final moments), keep the final count.
+        count: frames[i]?.count ?? (t.frames.length && tMs > t.frames[t.frames.length - 1].tMs ? t.frames[t.frames.length - 1].count : 0),
         lost: !!frames[i]?.trackingLost,
       }));
       const hk = h.map((x) => `${x.side}${x.count}${x.lost}`).join('|');

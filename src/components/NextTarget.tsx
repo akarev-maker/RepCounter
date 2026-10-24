@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { ProgressionSettings, Suggestion, Unit } from '../types';
 import { Card, SectionLabel } from './ui';
+import { RepRangePicker } from './RepRangePicker';
 
 interface Props {
   title?: string;
@@ -20,8 +21,6 @@ export function NextTarget({ title = 'Next session', suggestion, settings, incre
     onSettings({ ...settings, [key]: Math.max(min, n) });
   };
 
-  const rangeInvalid = settings.repRangeMin > settings.repRangeMax;
-
   return (
     <Card className="p-5">
       <div className="flex items-center justify-between">
@@ -32,15 +31,21 @@ export function NextTarget({ title = 'Next session', suggestion, settings, incre
           aria-expanded={open}
           className="text-[13px] font-semibold text-ink-2 underline-offset-4 hover:text-ink hover:underline"
         >
-          {open ? 'Done' : 'Edit rules'}
+          {open ? 'Done' : 'Change rules'}
         </button>
       </div>
 
       {suggestion ? (
         <div className="mt-3">
           <p className="text-2xl font-bold tracking-tight">
-            <span className="tabular-nums">{suggestion.weight}</span>{' '}
-            <span className="text-ink-2">{suggestion.unit}</span>
+            {suggestion.weight === 0 ? (
+              <span>Bodyweight</span>
+            ) : (
+              <>
+                <span className="tabular-nums">{suggestion.weight}</span>{' '}
+                <span className="text-ink-2">{suggestion.unit}</span>
+              </>
+            )}
             <span className="mx-2 text-ink-3">×</span>
             <span className="tabular-nums">{suggestion.reps}</span>{' '}
             <span className="text-ink-2">reps</span>
@@ -54,11 +59,27 @@ export function NextTarget({ title = 'Next session', suggestion, settings, incre
         </p>
       )}
 
+      {!open && (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="mt-4 flex w-full flex-wrap gap-x-3 gap-y-1 rounded-xl bg-canvas px-3.5 py-2.5 text-left text-[13px] text-ink-2 transition hover:bg-black/[0.05]"
+        >
+          <span>
+            Rep range <span className="font-semibold tabular-nums text-ink">{settings.repRangeMin}–{settings.repRangeMax}</span>
+          </span>
+          <span>
+            Add <span className="font-semibold tabular-nums text-ink">{settings.increment} {incrementUnit}</span> after{' '}
+            {settings.successSetsRequired} top set{settings.successSetsRequired === 1 ? '' : 's'}
+          </span>
+        </button>
+      )}
+
       {open && (
         <div className="mt-5 border-t border-line pt-5">
-          <div className="grid grid-cols-2 gap-3">
-            <NumField label="Rep range low" value={settings.repRangeMin} onChange={(v) => setNum('repRangeMin', v, 1)} />
-            <NumField label="Rep range high" value={settings.repRangeMax} onChange={(v) => setNum('repRangeMax', v, 1)} />
+          <p className="mb-2 text-sm font-medium">Rep range</p>
+          <RepRangePicker settings={settings} onSettings={onSettings} />
+          <div className="mt-4 grid grid-cols-2 gap-3">
             <NumField
               label={`Smallest jump (${incrementUnit})`}
               value={settings.increment}
@@ -71,19 +92,21 @@ export function NextTarget({ title = 'Next session', suggestion, settings, incre
               onChange={(v) => setNum('successSetsRequired', v, 1)}
             />
           </div>
-          {rangeInvalid && (
-            <p className="mt-2 text-xs font-medium text-red-700">The low end of the range is above the high end.</p>
-          )}
           <ol className="mt-4 space-y-1.5 text-[13px] leading-relaxed text-ink-2">
             <li>
               <span className="font-semibold text-ink">Below {settings.repRangeMin} reps or Failed:</span> repeat the weight.
             </li>
-            <li>
-              <span className="font-semibold text-ink">
-                {settings.repRangeMin}–{settings.repRangeMax - 1} reps:
-              </span>{' '}
-              same weight, one more rep.
-            </li>
+            {settings.repRangeMax > settings.repRangeMin && (
+              <li>
+                <span className="font-semibold text-ink">
+                  {settings.repRangeMax - 1 === settings.repRangeMin
+                    ? `${settings.repRangeMin} reps`
+                    : `${settings.repRangeMin}–${settings.repRangeMax - 1} reps`}
+                  :
+                </span>{' '}
+                same weight, one more rep.
+              </li>
+            )}
             <li>
               <span className="font-semibold text-ink">{settings.repRangeMax}+ reps:</span> add {settings.increment}{' '}
               {incrementUnit} once you&apos;ve done it in {settings.successSetsRequired} set

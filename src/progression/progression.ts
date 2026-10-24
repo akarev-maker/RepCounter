@@ -34,6 +34,7 @@ export function suggestNext(
   const last = sorted[0];
   const w = last.weight;
   const unit = last.unit;
+  const load = formatLoad(w, unit);
   const { repRangeMin, repRangeMax, increment, successSetsRequired } = settings;
   const range = `${repRangeMin}\u2013${repRangeMax}`;
   const both = !!last.perArm;
@@ -43,13 +44,13 @@ export function suggestNext(
   if (last.effort === 'failed' || last.reps < repRangeMin) {
     const why =
       last.effort === 'failed'
-        ? `your last set at ${w} ${unit} was marked Failed`
+        ? `your last set at ${load} was marked Failed`
         : `your last set was ${repsPhrase(last)}, below your ${range} range`;
     return {
       weight: w,
       unit,
       reps: repRangeMin,
-      reason: `Stay at ${w} ${unit} and aim for at least ${repRangeMin} reps${eachArm}, because ${why}.`,
+      reason: `Stay at ${load} and aim for at least ${repRangeMin} reps${eachArm}, because ${why}.`,
     };
   }
 
@@ -68,7 +69,7 @@ export function suggestNext(
         weight: next,
         unit,
         reps: repRangeMin,
-        reason: `You reached ${repRangeMax}+ reps${both ? ' on both arms' : ''} at ${w} ${unit} in your last ${streak} set${streak === 1 ? '' : 's'}. Add ${increment} ${unit} and start again at ${repRangeMin} reps.`,
+        reason: `You reached ${repRangeMax}+ reps${both ? ' on both arms' : ''} at ${load} in your last ${streak} set${streak === 1 ? '' : 's'}. Add ${increment} ${unit} and start again at ${repRangeMin} reps.`,
       };
     }
     const need = successSetsRequired - streak;
@@ -76,7 +77,7 @@ export function suggestNext(
       weight: w,
       unit,
       reps: repRangeMax,
-      reason: `You reached the top of your range${both ? ' on both arms' : ''} at ${w} ${unit}. Repeat it ${need} more time${need === 1 ? '' : 's'} before adding ${increment} ${unit}.`,
+      reason: `You reached the top of your range${both ? ' on both arms' : ''} at ${load}. Repeat it ${need} more time${need === 1 ? '' : 's'} before adding ${increment} ${unit}.`,
     };
   }
 
@@ -86,8 +87,13 @@ export function suggestNext(
     weight: w,
     unit,
     reps: target,
-    reason: `You did ${repsPhrase(last)} at ${w} ${unit}, inside your ${range} range. Keep the weight and aim for ${target}${eachArm}.`,
+    reason: `You did ${repsPhrase(last)} at ${load}, inside your ${range} range. Keep the weight and aim for ${target}${eachArm}.`,
   };
+}
+
+/** "25 lb", or "bodyweight" for a weight of 0. */
+export function formatLoad(weight: number, unit: string): string {
+  return weight === 0 ? 'bodyweight' : `${weight} ${unit}`;
 }
 
 /** "9 reps", or for both-arm sets "8 reps on your weaker (left) arm". */

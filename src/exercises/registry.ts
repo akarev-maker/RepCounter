@@ -25,8 +25,24 @@ export interface ExerciseDef {
   id: string;
   label: string;
   joint: Joint;
-  /** Whether the user must pick a side (left/right). */
+  /** Body part named in the UI ("arm", "leg"). */
+  limb: 'arm' | 'leg';
+  /**
+   * Whether the user picks a side (left/right). Exercises that are not sided
+   * use both sides of the body together: each frame is measured on the more
+   * visible side (see scoreFrames).
+   */
   sided: boolean;
+  /** Shown next to the weight field, e.g. "per dumbbell". */
+  weightNote: string;
+  /** Appended to a saved weight in History, e.g. "per dumbbell". */
+  loadSuffix: string;
+  /** Whether 0 is a valid weight (bodyweight sets). */
+  allowBodyweight: boolean;
+  /** What must be in frame, used in tracking warnings. */
+  framingAdvice: string;
+  /** Three filming tips shown before a video is added. */
+  filmingTips: { t: string; d: string }[];
   /**
    * The angle is measured at the middle landmark between the three points.
    * triplet = [proximal, joint, distal].
@@ -54,7 +70,17 @@ export const EXERCISES: Record<string, ExerciseDef> = {
     id: 'dumbbell-curl',
     label: 'Dumbbell Curl',
     joint: 'elbow',
+    limb: 'arm',
     sided: true,
+    weightNote: 'per dumbbell',
+    loadSuffix: ' per dumbbell',
+    allowBodyweight: false,
+    framingAdvice: 'Tracking needs your shoulder and some of your torso in frame, with the phone held still.',
+    filmingTips: [
+      { t: 'Clear view', d: 'Film from the side or the front, with nothing blocking the working arm.' },
+      { t: 'Whole arm in frame', d: 'Shoulder, elbow and wrist should stay visible for every rep.' },
+      { t: 'Steady phone', d: 'Prop it up at chest height. Good light helps tracking.' },
+    ],
     landmarks: {
       left: [LM.LEFT_SHOULDER, LM.LEFT_ELBOW, LM.LEFT_WRIST],
       right: [LM.RIGHT_SHOULDER, LM.RIGHT_ELBOW, LM.RIGHT_WRIST],
@@ -64,9 +90,36 @@ export const EXERCISES: Record<string, ExerciseDef> = {
     filmingHint: 'Film from the side or the front, with nothing blocking the working arm.',
     defaults: { repRangeMin: 8, repRangeMax: 12, increment: 5, unit: 'lb' },
   },
-  // Future: squats (knee), overhead press (elbow, opposite direction), etc.
-  // Adding an entry here is all that is required — the counter, overlay and
-  // analysis loop read from the def.
+  /**
+   * Knee angle (hip-knee-ankle). Thresholds come from recorded pose data on
+   * four free Pexels squat clips (see manual-test-notes.md): the bottom of a
+   * rep measured 58-117 deg depending on depth and camera angle, standing
+   * measured 162-180 deg.
+   */
+  squat: {
+    id: 'squat',
+    label: 'Squat',
+    joint: 'knee',
+    limb: 'leg',
+    sided: false,
+    weightNote: 'total load, 0 for bodyweight',
+    loadSuffix: '',
+    allowBodyweight: true,
+    framingAdvice: 'Tracking needs your hips, knees and ankles in frame, with the phone held still.',
+    filmingTips: [
+      { t: 'Film from the side', d: 'A side or three-quarter view shows the knee bend clearly.' },
+      { t: 'Whole body in frame', d: 'Keep hips, knees and feet visible at the bottom of every rep.' },
+      { t: 'Steady phone', d: 'Prop it up at hip height, a few steps away. Good light helps tracking.' },
+    ],
+    landmarks: {
+      left: [LM.LEFT_HIP, LM.LEFT_KNEE, LM.LEFT_ANKLE],
+      right: [LM.RIGHT_HIP, LM.RIGHT_KNEE, LM.RIGHT_ANKLE],
+    },
+    flexEnter: 110,
+    extendEnter: 155,
+    filmingHint: 'Counts each full squat from the bend at your knees. Film from the side, whole body in frame.',
+    defaults: { repRangeMin: 8, repRangeMax: 12, increment: 10, unit: 'lb' },
+  },
 };
 
 export const DEFAULT_EXERCISE_ID = 'dumbbell-curl';

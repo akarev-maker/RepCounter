@@ -1,0 +1,54 @@
+import { describe, it, expect } from 'vitest';
+import type { NormPoint, PoseFrame } from '../types';
+import { EXERCISES } from '../exercises/registry';
+import { scoreFrames } from './scoreFrames';
+
+// Leg landmarks recorded from RepCounter running MediaPipe on free Pexels clips.
+// True counts were read by eye from frame grids of each clip.
+type Lm = [number, number, number];
+type Fixture = { aspect: number; frames: [number, Lm[] | null][] };
+const IDS = [23, 24, 25, 26, 27, 28];
+
+function toPoseFrames(fx: Fixture): PoseFrame[] {
+  return fx.frames.map(([tMs, pts]) => {
+    if (!pts) return { tMs, lms: null };
+    const lms: NormPoint[] = Array.from({ length: 33 }, () => ({ x: 0, y: 0, visibility: 0 }));
+    pts.forEach(([x, y, visibility], i) => (lms[IDS[i]] = { x, y, visibility }));
+    return { tMs, lms };
+  });
+}
+
+const squat = EXERCISES.squat;
+const run = async (name: string) => {
+  const fx = (await import(`../counting/__fixtures__/${name}.json`)).default as unknown as Fixture;
+  return scoreFrames(toPoseFrames(fx), squat, null, fx.aspect);
+};
+
+describe('squat counting on real clips (recorded pose output)', () => {
+  it('side view, slow reps: 3 squats, each found at the right time', async () => {
+    const r = await run('squat-side-slow');
+    expect(r.count).toBe(3);
+    // Bottoms at about 3.5 s, 10.3 s and 18 s in the clip.
+    [3.5, 10.3, 18].forEach((bottom, i) => {
+      expect(r.reps[i].startMs / 1000).toBeLessThan(bottom);
+      expect(r.reps[i].tsMs / 1000).toBeGreaterThan(bottom);
+    });
+    expect(r.trackedFraction).toBeGreaterThan(0.9);
+  });
+
+  it('three-quarter view, small in frame: 5 squats', async () => {
+    const r = await run('squat-three-quarter');
+    expect(r.count).toBe(5);
+  });
+
+  it('front view, clip ends mid-rep: counts the 2 finished squats, not the cut-off third', async () => {
+    const r = await run('squat-front-cut-off');
+    expect(r.count).toBe(2);
+  });
+
+  it('knees out of frame: no reps invented, and tracking is reported as poor', async () => {
+    const r = await run('squat-knees-out-of-frame');
+    expect(r.count).toBe(0);
+    expect(r.trackedFraction).toBeLessThan(0.3);
+  });
+});

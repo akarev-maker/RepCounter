@@ -231,11 +231,13 @@ export default function App() {
     });
     setCounts(scored.map((r) => r.count));
     const best = Math.max(...scored.map((r) => r.trackedFraction));
+    const what =
+      exercise.limb === 'leg' ? 'Your legs were' : sides.length > 1 ? 'Your arms were' : 'Your arm was';
     setAnalysisError(
       best === 0
-        ? 'No arm was tracked in this clip. Make sure your whole upper body is in frame, with good light.'
+        ? `${what} not tracked in this clip. ${exercise.framingAdvice} Good light helps too.`
         : best < UNRELIABLE_TRACKING
-          ? `The arm was only tracked in ${Math.round(best * 100)}% of the clip, so the count isn't reliable. Tracking needs your shoulder and some of your torso in frame, with the phone held still. Refilm, or enter the count by hand below.`
+          ? `${what} only tracked in ${Math.round(best * 100)}% of the clip, so the count isn't reliable. ${exercise.framingAdvice} Refilm, or enter the count by hand below.`
           : null,
     );
   }
@@ -422,8 +424,8 @@ export default function App() {
                     Count reps from a recorded set
                   </h1>
                   <p className="mt-1.5 max-w-xl text-[15px] text-ink-2">
-                    Pose tracking runs in your browser and counts each full curl, on one arm or each
-                    arm separately. You confirm the numbers before anything is saved.
+                    Pose tracking runs in your browser and counts each full rep of curls (one arm or
+                    each arm separately) and squats. You confirm the numbers before anything is saved.
                   </p>
                 </div>
               )}
@@ -451,7 +453,7 @@ export default function App() {
               )}
               {analysisError && <Notice tone="warn">{analysisError}</Notice>}
 
-              {!videoUrl && <FilmingTips both={effectiveMode === 'both'} hint={exercise.filmingHint} />}
+              {!videoUrl && <FilmingTips tips={exercise.filmingTips} both={effectiveMode === 'both'} />}
             </div>
 
             <aside className="min-w-0 space-y-4 lg:sticky lg:top-20 lg:self-start">
@@ -479,6 +481,11 @@ export default function App() {
               {result && !analyzing && (
                 <ResultsPanel
                   arms={armViews}
+                  limb={exercise.limb}
+                  weightNote={exercise.weightNote}
+                  allowBodyweight={exercise.allowBodyweight}
+                  settings={settings}
+                  onSettings={handleSettings}
                   onCountChange={(i, n) => setCounts((prev) => prev.map((c, j) => (j === i ? n : c)))}
                   hint={result.hint}
                   onApplyHint={handleHint}
@@ -556,17 +563,14 @@ function Logo() {
   );
 }
 
-function FilmingTips({ hint, both }: { hint: string; both: boolean }) {
-  const tips = [
-    both
-      ? { t: 'Face the camera', d: 'Film from the front so neither arm hides the other.' }
-      : { t: 'Clear view', d: hint },
-    {
-      t: both ? 'Both arms in frame' : 'Whole arm in frame',
-      d: 'Shoulder, elbow and wrist should stay visible for every rep.',
-    },
-    { t: 'Steady phone', d: 'Prop it up at chest height. Good light helps tracking.' },
-  ];
+function FilmingTips({ tips: base, both }: { tips: { t: string; d: string }[]; both: boolean }) {
+  const tips = both
+    ? [
+        { t: 'Face the camera', d: 'Film from the front so neither arm hides the other.' },
+        { t: 'Both arms in frame', d: 'Shoulders, elbows and wrists should stay visible for every rep.' },
+        base[2],
+      ]
+    : base;
   return (
     <Card className="p-5">
       <SectionLabel>For an accurate count</SectionLabel>

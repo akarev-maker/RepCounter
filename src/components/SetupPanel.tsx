@@ -82,6 +82,8 @@ export function SetupPanel(p: Props) {
           </div>
         </div>
 
+        {!def.sided && <p className="-mt-1 text-xs leading-relaxed text-ink-3">{def.filmingHint}</p>}
+
         {def.sided && (
           <div>
             <p className="mb-2 text-sm font-medium text-ink">Arms</p>

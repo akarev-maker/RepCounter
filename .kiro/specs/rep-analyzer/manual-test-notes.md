@@ -2,11 +2,15 @@
 
 Last updated: 2026-10-24. Separates what was actually run from what is assumed.
 
-## Automated unit tests (`npm test`, 38 passing)
+## Automated unit tests (`npm test`, 42 passing)
 
 Includes recorded angle sequences from six real clips: the Pexels clip (4 reps,
 left arm), the user's first iPhone clip (6 reps, right arm), and the user's four
 labeled gym clips (see the gym section below).
+
+`src/analysis/squat.test.ts`: hip, knee and ankle landmarks recorded from four
+free Pexels squat clips are run through the real scoring path (leg selection
+plus counter). See the squat section below for the clips and counts.
 
 `src/counting/balance.test.ts`: a one-rep difference is flagged and names the
 arm with more reps; even counts; only one arm moved; neither arm moved; the
@@ -70,20 +74,46 @@ Angle sequences are saved as fixtures with matching unit tests.
 
 Analysis took 5–10 s per clip.
 
+## Squats on free Pexels clips (headless Chrome)
+
+True counts were read by eye from a 2 fps frame grid of each clip. Leg
+landmarks are saved as fixtures (no video). Default thresholds: bent ≤ 110°,
+standing ≥ 155°.
+
+| Pexels clip | View | True count | Detected | Notes |
+|---|---|---|---|---|
+| 9001924 (21.5 s, 1080×1920) | side / three-quarter, slow reps | 3 | **3** | Bottoms measured 77–93°. Far leg below the visibility bar during reps, so the near leg was used. Same result at 390×844 mobile. |
+| 8837221 (25.6 s, 1440×2732) | three-quarter, person small in frame | 5 | **5** | Deepest squats, 58–79° at the bottom. |
+| 4838220 (12.7 s, 2160×3840) | front, resistance band | 2 full + 1 cut off | **2** | The clip ends on the way up from rep 3, which is correctly not counted. From the front one knee read 10–15° straighter, so the legs are averaged. Before averaging, one run counted 1. |
+| 6326764 (37.1 s, 1920×1080) | front, framed from the hips up | 4 | **0** | Knees and ankles mostly out of frame (0% tracked). The app shows the unreliable-tracking warning with squat-specific framing advice. |
+
+A fifth clip (8233042) was dropped: it is a close-up of the torso with the legs never in frame.
+
+Bodyweight save: weight 0, rep range 3–5, 3 reps, Just right. History shows
+"bodyweight"; target "Bodyweight × 4 reps" with the reason "You did 3 reps at
+bodyweight, inside your 3–5 range."
+
+Curl regressions after the squat changes: alternating R5/L4, quick 5, and the
+moving-camera clip (0 reps, warning) are unchanged.
+
 ## Not yet tested (assumptions)
 
 1. **Curls with a real dumbbell held close to the camera, or in a busy gym.**
    Mirrors and other people in frame were not tested; MediaPipe tracks one
    person, which may not be the lifter.
-2. **Safari / iOS Safari and Firefox.** Only Chrome on macOS was run. Firefox
+2. **Squats filmed by the user, loaded squats, and other squat styles.** No
+   barbell clip was tested; a bar or plates can hide the hips. Partial
+   (above-parallel) squats that never bend below 110° are not counted, and
+   very deep squats filmed from the front have not been checked.
+3. **Safari / iOS Safari and Firefox.** Only Chrome on macOS was run. Firefox
    does not decode HEVC, so iPhone `.mov` files will show the HEVC message
    there. iOS Safari seeking speed and `drawImage` rotation handling are
    assumed, not verified.
-3. **Partial occlusion in real footage.** The moving-camera clip covers total
+4. **Partial occlusion in real footage.** The moving-camera clip covers total
    tracking failure. Brief occlusion mid-set (e.g. a hand passing in front) is
    only covered by synthetic sequences.
-4. **Very fast reps.** Reps 1.2 s apart were verified; reps under about 0.4 s
+5. **Very fast reps.** Reps 1.2 s apart were verified; reps under about 0.4 s
    could be missed at 15 fps.
-5. **Long or 4K clips.** Analysis time grows linearly with duration; frames are
+6. **Long or 4K clips.** Analysis time grows linearly with duration; frames are
    downscaled to 640 px before inference, but decode cost of 4K seeking was not
    measured.
