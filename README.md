@@ -1,5 +1,7 @@
 # RepCounter
 
+**Try it:** https://akarev-maker.github.io/RepCounter/
+
 Upload a video of a set, and RepCounter counts your reps in the browser. For
 curls it tracks each arm separately and flags uneven sets. You can confirm or correct the
 count, log the weight, and get a next-session target.
@@ -54,7 +56,7 @@ npm test        # unit tests, including recorded pose data from real clips
 npm run build
 ```
 
-Requires Node 20+.
+Requires Node 22.12+ (or 20.19+). Pushing to `main` runs the tests and deploys to GitHub Pages (`.github/workflows/deploy.yml`).
 
 ## Testing
 
