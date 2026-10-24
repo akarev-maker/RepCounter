@@ -2,7 +2,7 @@
 
 Last updated: 2026-10-24. Separates what was actually run from what is assumed.
 
-## Automated unit tests (`npm test`, 61 passing)
+## Automated unit tests (`npm test`, 69 passing)
 
 `src/analysis/legMachines.test.ts`: leg press landmarks from a free Pexels
 clip through the real scoring path, and synthetic seated knee-angle traces for
@@ -155,7 +155,31 @@ that leg's tallest clearly visible height in the last 6 s. Standing reads
 about 100 for any camera placement; a parallel squat about 50. Rep starts at
 ≤ 85, counts after standing back to ≥ 92, flagged "go deeper" if the lowest
 value stays above 65, minimum rep 0.6 s. Shown as depth = (100 − value) × 2,
-capped at 100% (about parallel).
+capped at 100%. This is an on-screen measurement, not an anatomical depth
+claim; the UI says so.
+
+Robustness (`src/analysis/squatRobustness.test.ts`, synthetic front-view
+poses), added after a review pointed out untested cases:
+
+| Case | Before the fix | After |
+|---|---|---|
+| Walk away from the phone (shrink to 60% over 3 s), stand 2.5 s, 3 squats | **2** (a rep was lost: the old, taller standing height stayed as the reference for 6 s) | **3** |
+| Walk away and squat straight away | — | 1–3 allowed, never more than 3 |
+| Walk toward the phone after the set | 3 | 3 |
+| Stepping in place (one ankle lifts at a time) | 0 | 0 |
+| Single-frame ankle glitches (15% of the frame) during 3 squats | **0** (one glitch inflated the standing height for 6 s) | **3** |
+| Legs leave the frame for 2 s mid-set | 4 | 4 |
+| Paused squats, 3 s hold at the bottom | — | 3 |
+
+Fixes: heights are median-smoothed (5 frames) before they can become the
+standing reference; and when the height holds steady (±5%) below 92% of the
+reference for 2 s with the knee clearly between hip and ankle, that becomes
+the new reference and any rep in progress is discarded. A long hold at the
+bottom with a badly placed knee could in theory trigger this and lose that
+rep (an undercount, never a false rep).
+
+Not covered by real video: walking into or out of frame, ankle glitches and
+camera bumps. These are synthetic only.
 
 Picked by replaying all 8 recorded squat fixtures offline:
 
@@ -169,7 +193,7 @@ Picked by replaying all 8 recorded squat fixtures offline:
 
 | Clip | True count | Detected (browser, local build, 390×844) | Bottoms |
 |---|---|---|---|
-| User's phone test, phone low and close | 6 (read from the hip/shoulder trace; **not yet confirmed by the user**) | **6** (hip height: 0) | 64, 54, 49, 51, 52, 55; none flagged |
+| User's phone test, phone low and close | 6 (confirmed by the user) | **6** (hip height: 0) | 64, 54, 49, 51, 52, 55; none flagged |
 | User's front-view recording | 6 (confirmed) | **6** | 52, 43, 43, 47, 53, 53; none flagged (hip height flagged rep 1) |
 | Pexels 9001924 (side) | 3 | **3** | |
 | Pexels 8435486 (one visibly shallow rep) | 3 | **3** | rep 1 (68) flagged |

@@ -87,6 +87,15 @@ export class RepCounter {
   }
 
   /**
+   * Discard any rep in progress (keeping the count). The next rep needs a
+   * fresh extension, as after lost tracking.
+   */
+  rearm(): void {
+    this.state = 'unknown';
+    this.smoother.reset();
+  }
+
+  /**
    * Feed one frame. Idempotent on timestamp: a sample whose tsMs is not
    * strictly greater than the previous one is ignored, so replaying or
    * re-emitting the same frame cannot duplicate reps.

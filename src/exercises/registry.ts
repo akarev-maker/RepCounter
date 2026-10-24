@@ -172,12 +172,13 @@ export const EXERCISES: Record<string, ExerciseDef> = {
     minRepMs: 600,
     extendEnter: 92,
     depth: {
-      // 100% = hips dropped by half the standing hip-to-ankle height, which
-      // is about parallel. Deeper than that still shows 100%.
+      // 100% = the on-screen hip-to-ankle height halved. This is a video
+      // measurement, not a joint angle; it is near parallel for many people
+      // but depends on the camera. Deeper than that still shows 100%.
       format: (bottom) => `${Math.min(100, Math.max(0, Math.round((100 - bottom) * 2)))}%`,
       suffix: ' depth',
       target: '70% depth or more',
-      explain: '100% is about thighs parallel to the floor.',
+      explain: '100% means your hips came halfway down to your ankles on screen. It is measured from the video, not your joints.',
       good: 'Good depth',
       full: 'full depth',
       cue: 'go deeper',
