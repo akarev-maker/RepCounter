@@ -21,7 +21,7 @@ export const LM = {
 
 export type Joint = 'elbow' | 'knee';
 
-/** Wording for exercises that count partial reps but flag them. */
+/** Wording for exercises that flag reps below a movement reference. */
 export interface DepthWording {
   /** Format a rep's bottom value (as recorded by the counter), e.g. "45%" or "118°". */
   format: (bottom: number) => string;
@@ -73,10 +73,9 @@ export interface ExerciseDef {
    * What the counter tracks for each frame (lower = deeper in the rep):
    * - 'angle': the joint angle in degrees at the middle landmark.
    * - 'hipDrop': hip-to-ankle height (vertical image position only) as a
-   *   percentage of that leg's tallest height in the last `HIP_DROP_WINDOW_MS`.
-   *   Standing reads about 100 whatever the camera height, distance or angle,
-   *   and a squat to parallel about 50. It ignores the knee, which MediaPipe
-   *   places badly when the phone is low and in front.
+   *   percentage of that leg's retained standing-height reference. It measures
+   *   motion in the image, not anatomical squat depth. Knee position helps
+   *   decide when a change of camera distance can reset that reference.
    */
   measure: 'angle' | 'hipDrop';
   /**
@@ -179,18 +178,15 @@ export const EXERCISES: Record<string, ExerciseDef> = {
     minRepMs: 600,
     extendEnter: 92,
     depth: {
-      // 100% = the on-screen hip-to-ankle height halved. This is a video
-      // measurement, not a joint angle; it is near parallel for many people
-      // but depends on the camera. Deeper than that still shows 100%.
-      format: (bottom) => `${Math.min(100, Math.max(0, Math.round((100 - bottom) * 2)))}%`,
-      suffix: ' depth',
-      target: '70% depth or more',
-      explain: '100% means your hips came halfway down to your ankles on screen. It is measured from the video, not your joints.',
-      good: 'Good depth',
-      full: 'full depth',
-      cue: 'go deeper',
+      format: (bottom) => `${Math.min(100, Math.max(0, Math.round(100 - bottom)))}%`,
+      suffix: ' hip drop',
+      target: '35% hip drop',
+      explain: 'Hip drop is the reduction in your on-screen hip-to-ankle height from standing. Camera position affects it; it does not establish squat depth or form.',
+      good: 'Hip-drop reference reached',
+      full: 'the hip-drop reference',
+      cue: 'use a range check',
     },
-    filmingHint: 'Counts each squat from how far your hips drop, and flags reps that could go deeper. Keep your whole body in frame, from the side or the front.',
+    filmingHint: 'Counts each squat using hip movement and highlights smaller movements for review. Keep your whole body in frame, from the side or the front.',
     defaults: { repRangeMin: 8, repRangeMax: 12, increment: 10, unit: 'lb' },
   },
   /**

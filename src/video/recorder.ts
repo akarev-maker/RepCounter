@@ -73,8 +73,14 @@ export function describeCameraError(e: unknown): string {
   return 'The camera could not be started. You can still upload a video.';
 }
 
-/** Records a stream into chunks; `stop()` resolves with a File for the normal upload path. */
-export function startRecording(stream: MediaStream): { stop: () => Promise<File> } {
+export interface Recording {
+  /** Settles on either a user stop or a browser-initiated stop/error. */
+  finished: Promise<File>;
+  stop: () => Promise<File>;
+}
+
+/** Records a stream into chunks; completion supplies a File for the upload path. */
+export function startRecording(stream: MediaStream): Recording {
   const mimeType = pickMimeType();
   const recorder = new MediaRecorder(stream, {
     ...(mimeType ? { mimeType } : {}),
@@ -84,20 +90,38 @@ export function startRecording(stream: MediaStream): { stop: () => Promise<File>
   recorder.ondataavailable = (e) => {
     if (e.data.size > 0) chunks.push(e.data);
   };
+  let rejectCompletion: (reason: unknown) => void;
+  // Install handlers before start: the browser can stop or fail without the
+  // user pressing Stop. Every caller receives this same terminal result.
+  const completion = new Promise<File>((resolve, reject) => {
+    rejectCompletion = reject;
+    recorder.onstop = () => {
+      const type = recorder.mimeType || mimeType || 'video/webm';
+      const ext = type.includes('mp4') ? 'mp4' : 'webm';
+      const stamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
+      if (chunks.length === 0) reject(new Error('Nothing was recorded.'));
+      else resolve(new File(chunks, `recording-${stamp}.${ext}`, { type: type.split(';')[0] }));
+    };
+    recorder.onerror = (event) => {
+      const error = (event as Event & { error?: Error }).error;
+      reject(error ?? new Error('The recording failed. Try again.'));
+    };
+  });
+  // An automatic error may precede the caller's stop(); retain the rejection
+  // for that caller without an unhandled-promise notification in the meantime.
+  void completion.catch(() => {});
   recorder.start(1000);
 
   return {
-    stop: () =>
-      new Promise<File>((resolve, reject) => {
-        recorder.onstop = () => {
-          const type = recorder.mimeType || mimeType || 'video/webm';
-          const ext = type.includes('mp4') ? 'mp4' : 'webm';
-          const stamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
-          if (chunks.length === 0) reject(new Error('Nothing was recorded.'));
-          else resolve(new File(chunks, `recording-${stamp}.${ext}`, { type: type.split(';')[0] }));
-        };
+    finished: completion,
+    stop: () => {
+      try {
         if (recorder.state !== 'inactive') recorder.stop();
-      }),
+      } catch (error) {
+        rejectCompletion(error);
+      }
+      return completion;
+    },
   };
 }
 

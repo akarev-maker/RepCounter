@@ -75,7 +75,12 @@ export function CameraStage({ onRecorded, onClose }: Props) {
   }, [facing]);
 
   // Release everything if the component goes away mid-recording.
-  useEffect(() => () => releaseWakeRef.current(), []);
+  useEffect(() => () => {
+    const rec = recRef.current;
+    recRef.current = null;
+    void rec?.stop();
+    releaseWakeRef.current();
+  }, []);
 
   // Countdown ticks.
   useEffect(() => {
@@ -111,8 +116,13 @@ export function CameraStage({ onRecorded, onClose }: Props) {
     const stream = streamRef.current;
     if (!stream) return;
     try {
-      recRef.current = startRecording(stream);
+      const rec = startRecording(stream);
+      recRef.current = rec;
+      void receiveRecording(rec);
     } catch {
+      releaseWakeRef.current();
+      stopStream(streamRef.current);
+      streamRef.current = null;
       setError('This browser could not start recording. You can still upload a video.');
       setPhase('error');
       return;
@@ -120,22 +130,32 @@ export function CameraStage({ onRecorded, onClose }: Props) {
     startedAtRef.current = Date.now();
     setElapsedMs(0);
     setPhase('recording');
-    // If the camera stops on its own (phone locked, app switched), keep what was recorded.
-    stream.getVideoTracks()[0]?.addEventListener('ended', () => void finish(), { once: true });
   }
 
-  async function finish() {
+  function finish() {
     const rec = recRef.current;
     if (!rec) return;
-    recRef.current = null;
     setPhase('saving');
     releaseWakeRef.current();
+    // receiveRecording owns success/error handling for manual and automatic stops.
+    void rec.stop();
+  }
+
+  async function receiveRecording(rec: ReturnType<typeof startRecording>) {
     try {
-      const file = await rec.stop();
+      const file = await rec.finished;
+      if (recRef.current !== rec) return; // The component was closed.
+      recRef.current = null;
+      releaseWakeRef.current();
       stopStream(streamRef.current);
       streamRef.current = null;
       onRecorded(file);
     } catch (e) {
+      if (recRef.current !== rec) return;
+      recRef.current = null;
+      releaseWakeRef.current();
+      stopStream(streamRef.current);
+      streamRef.current = null;
       setError((e as Error).message || 'The recording failed. Try again.');
       setPhase('error');
     }

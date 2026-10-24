@@ -22,7 +22,7 @@ export interface SessionSummary {
   reps: number;
   /** Confirmed count per arm, for both-arm sets only. */
   perArm?: { left: number; right: number };
-  /** Reps that were counted but did not reach full depth (squats). */
+  /** Counted reps flagged below the exercise's movement reference. */
   shallowReps?: number;
   effort: Effort;
 }
@@ -38,7 +38,7 @@ export interface RepEvent {
    * measure: degrees for curls, hip height for squats (see registry).
    */
   bottomAngle: number;
-  /** Counted, but did not reach the exercise's full-depth value. */
+  /** Counted, but did not reach the exercise's movement reference. */
   shallow: boolean;
 }
 

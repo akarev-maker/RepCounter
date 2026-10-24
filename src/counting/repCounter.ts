@@ -68,7 +68,7 @@ export class RepCounter {
   private lastTsMs = -Infinity;
   /** Lowest smoothed angle since the current cycle started. */
   private cycleMin = Infinity;
-  /** Last few confident raw (unsmoothed) samples, for `finish`. */
+  /** Last consecutive confident raw (unsmoothed) samples, for `finish`. */
   private lastRaw: { tsMs: number; angle: number }[] = [];
 
   constructor(config: Partial<RepCounterConfig> = {}) {
@@ -92,14 +92,14 @@ export class RepCounter {
   /**
    * Call once after the last frame. The median smoother lags about two
    * frames, so a video that stops the moment the user is back at the top
-   * would leave the last rep unfinished. If the last few raw samples reached
-   * the top, count that rep. A video that ends mid-rep still doesn't count it.
+   * would leave the last rep unfinished. Require two consecutive terminal
+   * samples at the top, so one raw spike cannot bypass the smoother.
    */
   finish(): RepCounterSnapshot {
-    if (this.state === 'flexed' && this.lastRaw.length) {
-      const top = this.lastRaw.reduce((m, s) => Math.max(m, s.angle), -Infinity);
+    if (this.state === 'flexed' && this.lastRaw.length >= 2) {
+      const top = this.lastRaw.slice(-2).every((s) => s.angle >= this.cfg.extendEnter);
       const tsMs = this.lastRaw[this.lastRaw.length - 1].tsMs;
-      if (top >= this.cfg.extendEnter && tsMs - this.lastExtendedMs >= (this.cfg.minRepMs ?? 0)) {
+      if (top && tsMs - this.lastExtendedMs >= (this.cfg.minRepMs ?? 0)) {
         this.completeRep(tsMs);
         this.state = 'extended';
       }
@@ -140,6 +140,8 @@ export class RepCounter {
 
     // Confidence gate.
     if (sample.angle === null || sample.minVisibility < this.cfg.minVisibility) {
+      // Finalization must not bridge a visibility gap, even a brief one.
+      this.lastRaw = [];
       this.lowConfidenceRun += 1;
       if (this.lowConfidenceRun >= this.cfg.lostFramesThreshold) {
         // Discard any in-progress cycle. A new rep needs a fresh extension.

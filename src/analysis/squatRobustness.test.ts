@@ -105,6 +105,25 @@ describe('squat counting: movement that is not a squat', () => {
     expect(count(clip(k)).count).toBe(3);
   });
 
+  it('does not count standing back up while the person is still holding the bottom', () => {
+    const r = count(clip([[0, {}], [1, {}], [2, { drop: 0.5 }], [12, {}]]));
+    expect(r.count).toBe(0);
+    expect(r.frames.every((f) => f.count === 0)).toBe(true);
+  });
+
+  it('counts a long paused squat only after the person actually stands up', () => {
+    const r = count(clip([[0, {}], [1, {}], [2, { drop: 0.5 }], [12, {}], [13, { drop: 0 }], [14, {}]]));
+    expect(r.count).toBe(1);
+    expect(r.reps[0].tsMs).toBeGreaterThan(12_000);
+    expect(r.frames.filter((f) => f.tMs <= 12_000).every((f) => f.count === 0)).toBe(true);
+  });
+
+  it('preserves the standing reference through a slow descent', () => {
+    const r = count(clip([[0, {}], [1, {}], [10, { drop: 0.5 }], [11, {}], [20, { drop: 0 }], [21, {}]]));
+    expect(r.count).toBe(1);
+    expect(r.reps[0].tsMs).toBeGreaterThan(18_000);
+  });
+
   it('walking toward the phone after the set: no extra rep', () => {
     const r = count(clip([[0, {}], [1, {}], ...squats(1, 3), [9, {}], [12, { size: 0.8 }], [13, {}]]));
     expect(r.count).toBe(3);

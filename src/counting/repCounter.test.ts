@@ -139,6 +139,41 @@ describe('RepCounter', () => {
   });
 });
 
+describe('RepCounter end-of-video completion', () => {
+  function unfinished(tail: number[]) {
+    freshClock();
+    const counter = new RepCounter();
+    for (const sample of seq([...hold(160, 8), ...hold(60, 12), ...tail])) counter.push(sample);
+    return counter;
+  }
+
+  it.each([[160, 60, 60], [60, 60, 160]])('does not finish from a single raw spike: %j', (...tail) => {
+    const counter = unfinished(tail);
+    expect(counter.snapshot().count).toBe(0);
+    expect(counter.finish().count).toBe(0);
+  });
+
+  it('finishes a terminal extension before the median catches up, only once', () => {
+    const counter = unfinished([155, 160]);
+    expect(counter.snapshot().count).toBe(0);
+    expect(counter.finish().count).toBe(1);
+    expect(counter.finish().count).toBe(1);
+  });
+
+  it('does not finish using stale extension evidence after low-confidence frames', () => {
+    const counter = unfinished([155, 160]);
+    counter.push({ tsMs: t + 100, angle: null, minVisibility: 0 });
+    expect(counter.finish().count).toBe(0);
+  });
+
+  it('does not join extension samples across a tracking gap', () => {
+    const counter = unfinished([155]);
+    counter.push({ tsMs: t + 100, angle: null, minVisibility: 0 });
+    counter.push({ tsMs: t + 200, angle: 160, minVisibility: 1 });
+    expect(counter.finish().count).toBe(0);
+  });
+});
+
 describe('RepCounter start-of-clip and recovery', () => {
   it('does not count a cycle that was already flexed when the clip starts', () => {
     const c = new RepCounter();

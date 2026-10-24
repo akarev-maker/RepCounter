@@ -88,7 +88,9 @@ export function createScorer(exercise: ExerciseDef, side: Side | null, aspect: n
     const snap = offSeat(pf) ? counter.snapshot() : counter.push({ tsMs: pf.tMs, angle: fed, minVisibility: vis });
     let label: string | null = null;
     if (value !== null) {
-      label = exercise.measure === 'hipDrop' && exercise.depth ? `${exercise.depth.format(value)} depth` : `${Math.round(value)}\u00b0`;
+      label = exercise.measure === 'hipDrop' && exercise.depth
+        ? `${exercise.depth.format(value)}${exercise.depth.suffix}`
+        : `${Math.round(value)}\u00b0`;
     }
     return {
       tMs: pf.tMs,
@@ -108,15 +110,16 @@ export function createScorer(exercise: ExerciseDef, side: Side | null, aspect: n
   };
 }
 
-/** How far back 'hipDrop' looks for the standing height. */
+/** Recent history used to detect a stable change of camera distance. */
 export const HIP_DROP_WINDOW_MS = 6000;
 /** Standing still this long, below the reference, makes it the new reference. */
 export const HIP_DROP_SETTLE_MS = 2000;
 
 /**
- * Standing height for one leg, for the 'hipDrop' measure: the tallest
- * clearly visible hip-to-ankle height (vertical image position, y grows
- * downward) in the last HIP_DROP_WINDOW_MS.
+ * Standing height for one leg, for the 'hipDrop' measure: a retained
+ * reference from clearly visible hip-to-ankle heights (y grows downward).
+ * Expiring recent samples never lowers the reference: a bottom hold or slow
+ * descent must not become "standing" just because time has passed.
  * - Heights are median-smoothed before they can become the reference, so a
  *   one-frame ankle glitch can't inflate it.
  * - If the height holds steady below the reference for HIP_DROP_SETTLE_MS
@@ -129,10 +132,11 @@ export const HIP_DROP_SETTLE_MS = 2000;
  *   never a false rep).
  */
 export class StandingHeight {
-  private recent: { tMs: number; h: number; straight: boolean }[] = [];
+  private recent: { tMs: number; h: number; kneeFraction: number }[] = [];
   private raw: number[] = [];
+  private referenceHeight = 0;
 
-  /** Value = current height as a % of standing (about 100 standing, 50 at parallel). */
+  /** Value = current on-screen height as a percentage of the standing reference. */
   push(tMs: number, hip: Pt, knee: Pt, ankle: Pt, visible: boolean): { value: number | null; settled: boolean } {
     const h = ankle.y - hip.y;
     if (h < 0.02) return { value: null, settled: false };
@@ -141,31 +145,35 @@ export class StandingHeight {
       this.raw.push(h);
       if (this.raw.length > 5) this.raw.shift();
       const smooth = [...this.raw].sort((a, b) => a - b)[Math.floor(this.raw.length / 2)];
-      this.recent.push({ tMs, h: smooth, straight: (knee.y - hip.y) / h >= 0.3 });
+      this.referenceHeight = Math.max(this.referenceHeight, smooth);
+      this.recent.push({ tMs, h: smooth, kneeFraction: (knee.y - hip.y) / h });
       while (this.recent[0].tMs < tMs - HIP_DROP_WINDOW_MS) this.recent.shift();
       settled = this.settle(tMs);
+      // A short pause after stepping back can also establish a new scale,
+      // but needs stricter posture and stability evidence. Always rearm the
+      // counter on recalibration; a changed denominator cannot finish a rep.
+      if (!settled) settled = this.settle(tMs, 400, 0.48, 0.02);
     }
     if (!this.recent.length) return { value: null, settled };
-    const tallest = this.recent.reduce((m, r) => Math.max(m, r.h), 0);
-    return { value: (h / tallest) * 100, settled };
+    return { value: (h / this.referenceHeight) * 100, settled };
   }
 
-  private settle(tMs: number): boolean {
-    const from = tMs - HIP_DROP_SETTLE_MS;
+  private settle(tMs: number, duration = HIP_DROP_SETTLE_MS, kneeFraction = 0.3, tolerance = 0.05): boolean {
+    const from = tMs - duration;
     const i = this.recent.findIndex((r) => r.tMs >= from);
     // Need visible frames covering the whole settle period.
     if (i <= 0 || this.recent[i].tMs - from > 200) return false;
     const span = this.recent.slice(i);
-    if (!span.every((r) => r.straight)) return false;
+    if (!span.every((r) => r.kneeFraction >= kneeFraction)) return false;
     let lo = Infinity;
     let hi = 0;
     for (const r of span) {
       lo = Math.min(lo, r.h);
       hi = Math.max(hi, r.h);
     }
-    const tallest = this.recent.reduce((m, r) => Math.max(m, r.h), 0);
-    if ((hi - lo) / hi > 0.05 || hi > tallest * 0.92) return false;
+    if ((hi - lo) / hi > tolerance || hi > this.referenceHeight * 0.92) return false;
     this.recent = span;
+    this.referenceHeight = hi;
     return true;
   }
 }
