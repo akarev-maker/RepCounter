@@ -129,7 +129,7 @@ lowest value stays above 55 (below 45% depth), minimum rep 0.6 s.
 
 | Clip | True count | Detected |
 |---|---|---|
-| User's front-view recording | **assumed 6** (not confirmed by the user) | **6**; rep 1 flagged "go deeper", rep 2 the deepest |
+| User's front-view recording | **6** (confirmed by the user) | **6**; rep 1 flagged "go deeper", rep 2 the deepest |
 | Pexels 9001924 (side), in the browser | 3 | **3** |
 | Pexels fixtures (side, three-quarter, front, cut-off, out of frame, one shallow) | 3, 5, 2, 0, 3, 4 | same; the known shallow rep is still the only one flagged |
 | Alternating curls (regression) | R5 / L4 | **R5 / L4** |
@@ -137,8 +137,7 @@ lowest value stays above 55 (below 45% depth), minimum rep 0.6 s.
 Rejected: standing line at 90 instead of 95. The user's rep 1 then lasted
 under 0.6 s and was dropped.
 
-Not verified: the user's real count, the original (non-screen-recorded) clip,
-and whether 45% is the right "good depth" line for most people. The 45% line
+Not verified: the original (non-screen-recorded) clip, and whether 45% is the right "good depth" line for most people. The 45% line
 comes from the Pexels clips: the visibly shallow rep read 39% and deep reps
 read 50% or more.
 
@@ -167,8 +166,8 @@ switch, and camera-permission denial.
    person, which may not be the lifter.
 2. **Squats filmed by the user, loaded squats, and other squat styles.** No
    barbell clip was tested; a bar or plates can hide the hips. Quarter squats
-   under 20% depth are not counted. Only one user recording (a screen
-   recording, count assumed) has been run.
+   under 20% depth are not counted. Only one user squat recording has been
+   run, and it was a screen recording with the app's overlay on it.
 3. **Safari / iOS Safari and Firefox.** Only Chrome on macOS was run. Firefox
    does not decode HEVC, so iPhone `.mov` files will show the HEVC message
    there. iOS Safari seeking speed and `drawImage` rotation handling are
