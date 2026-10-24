@@ -27,6 +27,8 @@ export function createScorer(exercise: ExerciseDef, side: Side | null, aspect: n
     : [exercise.landmarks.left, exercise.landmarks.right];
   const counter = new RepCounter({
     flexEnter: exercise.flexEnter,
+    fullDepth: exercise.fullDepth,
+    minRepMs: exercise.minRepMs,
     extendEnter: exercise.extendEnter,
     minVisibility: MIN_VISIBILITY,
   });

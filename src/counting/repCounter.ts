@@ -18,6 +18,16 @@ export type RepState = 'unknown' | 'extended' | 'flexed';
 export interface RepCounterConfig {
   /** Angle at/below which we consider the joint flexed (bottom of movement). */
   flexEnter: number;
+  /**
+   * Optional stricter angle for a full-depth rep. Reps that pass `flexEnter`
+   * but never reach this still count, flagged `shallow`.
+   */
+  fullDepth?: number;
+  /**
+   * Optional shortest rep (ms, from leaving the top to returning). Faster
+   * dips are ignored, e.g. a knee bending mid-stride while walking.
+   */
+  minRepMs?: number;
   /** Angle at/above which we consider the joint extended (top of movement). */
   extendEnter: number;
   /** Min landmark visibility to trust a frame [0..1]. */
@@ -56,6 +66,8 @@ export class RepCounter {
   private lastExtendedMs = 0;
   private trackingLost = false;
   private lastTsMs = -Infinity;
+  /** Lowest smoothed angle since the current cycle started. */
+  private cycleMin = Infinity;
 
   constructor(config: Partial<RepCounterConfig> = {}) {
     this.cfg = { ...DEFAULT_CONFIG, ...config };
@@ -71,6 +83,7 @@ export class RepCounter {
     this.lastExtendedMs = 0;
     this.trackingLost = false;
     this.lastTsMs = -Infinity;
+    this.cycleMin = Infinity;
   }
 
   /**
@@ -104,16 +117,37 @@ export class RepCounter {
       if (a >= this.cfg.extendEnter) {
         this.state = 'extended';
         this.lastExtendedMs = sample.tsMs;
+        this.cycleMin = a;
       }
     } else if (this.state === 'extended') {
-      if (a >= this.cfg.extendEnter) this.lastExtendedMs = sample.tsMs;
-      else if (a <= this.cfg.flexEnter) this.state = 'flexed';
-    } else if (a >= this.cfg.extendEnter) {
-      // flexed -> back to extension completes the rep.
-      this.count += 1;
-      this.reps.push({ index: this.count, tsMs: sample.tsMs, startMs: this.lastExtendedMs });
-      this.state = 'extended';
-      this.lastExtendedMs = sample.tsMs;
+      this.cycleMin = Math.min(this.cycleMin, a);
+      if (a >= this.cfg.extendEnter) {
+        this.lastExtendedMs = sample.tsMs;
+        // Still at the top: the next rep's bottom is measured from here.
+        this.cycleMin = a;
+      } else if (a <= this.cfg.flexEnter) this.state = 'flexed';
+    } else {
+      this.cycleMin = Math.min(this.cycleMin, a);
+      if (a >= this.cfg.extendEnter && sample.tsMs - this.lastExtendedMs < (this.cfg.minRepMs ?? 0)) {
+        // Too quick to be a rep: treat it as never having left the top.
+        this.state = 'extended';
+        this.lastExtendedMs = sample.tsMs;
+        this.cycleMin = a;
+      } else if (a >= this.cfg.extendEnter) {
+        // flexed -> back to extension completes the rep.
+        this.count += 1;
+        const bottom = Math.round(this.cycleMin);
+        this.reps.push({
+          index: this.count,
+          tsMs: sample.tsMs,
+          startMs: this.lastExtendedMs,
+          bottomAngle: bottom,
+          shallow: this.cfg.fullDepth !== undefined && bottom > this.cfg.fullDepth,
+        });
+        this.state = 'extended';
+        this.lastExtendedMs = sample.tsMs;
+        this.cycleMin = a;
+      }
     }
 
     return this.snapshot();

@@ -28,9 +28,11 @@ secure page: `localhost`, or the site served over https.
    return to extension. Low-confidence frames pause counting rather than
    guessing.
    - Curl: elbow (shoulder–elbow–wrist), bent ≤ 70°, straight ≥ 150°.
-   - Squat: knee (hip–knee–ankle), bent ≤ 110°, standing ≥ 155°. Both legs
-     are averaged when both are clearly visible; otherwise the more visible
-     leg is used.
+   - Squat: knee (hip–knee–ankle). A rep counts once the knee bends to 140°
+     and you stand back up to 155°. Reps that never get to 110° still count
+     but are marked "go deeper", with the measured angle. Both legs are
+     averaged when both are clearly visible; otherwise the more visible leg
+     is used.
 3. Each rep gets a timestamp you can click to jump to it in the video.
 4. The next-set target uses double progression: add reps within your range, and
    add weight only after hitting the top of the range on two sets in a row.

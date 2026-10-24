@@ -2,7 +2,7 @@
 
 Last updated: 2026-10-24. Separates what was actually run from what is assumed.
 
-## Automated unit tests (`npm test`, 42 passing)
+## Automated unit tests (`npm test`, 51 passing)
 
 Includes recorded angle sequences from six real clips: the Pexels clip (4 reps,
 left arm), the user's first iPhone clip (6 reps, right arm), and the user's four
@@ -95,6 +95,26 @@ bodyweight, inside your 3–5 range."
 
 Curl regressions after the squat changes: alternating R5/L4, quick 5, and the
 moving-camera clip (0 reps, warning) are unchanged.
+
+## Squat depth (counts from 140°, "go deeper" above 110°)
+
+Changed after user testing: filming from hip height, deep squats only bent the
+knee to about 130° on screen, so they were not counted at the old 110° limit.
+Reps now count from 140°; reps whose deepest bend stays above 110° still
+count and are flagged with the measured angle. Dips that last under 0.6 s are
+ignored, so a step while walking into frame is not a rep.
+
+| Pexels clip | True count | Detected | Depth flags |
+|---|---|---|---|
+| 8435486 (front/three-quarter, person small) | 3 (first visibly shallower) | **3** | Rep 1 flagged at 123°; reps 2 and 3 at 99° and 88° not flagged. Before this change only 2 were counted. |
+| 8435375 (front/three-quarter) | 4 | **4** | None flagged (86–98°). |
+| Earlier clips 9001924, 8837221, 4838220 | 3, 5, 2 | unchanged | None flagged (64–102°). |
+| 8416667 (close-up of legs, walking in and out of frame) | unclear | 2 | Not used as a fixture: the legs leave the frame and the true count can't be read from the frames. |
+
+Curl counts are unchanged (alternating clip still R5/L4).
+
+The user's own clips at 130° have not been run; the user should confirm on
+the phone.
 
 ## In-browser recording (headless Chrome, fake camera)
 

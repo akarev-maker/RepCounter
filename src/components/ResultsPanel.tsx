@@ -30,6 +30,8 @@ interface Props {
   arms: ArmResultView[];
   /** Body part being tracked, for wording ("arm", "leg"). */
   limb: 'arm' | 'leg';
+  /** Full-depth angle for exercises that flag shallow reps (squats). */
+  fullDepth?: number;
   weightNote: string;
   allowBodyweight: boolean;
   settings: ProgressionSettings;
@@ -65,6 +67,8 @@ export function ResultsPanel(p: Props) {
   const balance = multi && right && left ? armBalance(right.count, left.count) : null;
 
   const lostArms = p.arms.filter((a) => a.everLostTracking);
+  const allReps = p.arms.flatMap((a) => a.reps);
+  const shallowReps = allReps.filter((r) => r.shallow);
   const lowVisArms = p.arms.filter((a) => Math.round(a.trackedFraction * 100) < 60);
 
   const saveLabel = multi
@@ -150,6 +154,31 @@ export function ResultsPanel(p: Props) {
           </div>
         )}
 
+        {p.fullDepth !== undefined && allReps.length > 0 && (
+          <div
+            className={`mt-3 rounded-xl border px-3.5 py-3 text-[13px] leading-snug ${
+              shallowReps.length ? 'border-amber-200 bg-amber-50 text-amber-950' : 'border-emerald-200 bg-emerald-50 text-emerald-900'
+            }`}
+          >
+            {shallowReps.length === 0 ? (
+              <>
+                <span className="font-semibold">Good depth on every rep.</span> Each one bent to {p.fullDepth}° or lower.
+              </>
+            ) : (
+              <>
+                <span className="font-semibold">
+                  {shallowReps.length === allReps.length
+                    ? 'All reps counted, but none reached full depth.'
+                    : `${shallowReps.length} of ${allReps.length} reps could go deeper.`}
+                </span>{' '}
+                {shallowReps.length === 1 ? 'Rep' : 'Reps'} {joinList(shallowReps.map((r) => String(r.index)))} bent to{' '}
+                {joinList(shallowReps.map((r) => `${r.bottomAngle}°`))}. They still count. Aim for {p.fullDepth}° or lower.
+                The angle depends on the camera view, so compare sets filmed the same way.
+              </>
+            )}
+          </div>
+        )}
+
         {p.arms.some((a) => a.reps.length > 0) && (
           <div className="mt-5 space-y-3">
             <p className="text-sm font-medium">Review reps</p>
@@ -163,16 +192,23 @@ export function ResultsPanel(p: Props) {
                         key={r.index}
                         type="button"
                         onClick={() => p.onSeek(r.startMs)}
-                        title={`${multi ? `${sideLabel(arm.side)} rep` : 'Rep'} ${r.index}: ${formatTime(r.startMs)} to ${formatTime(r.tsMs)}`}
+                        title={`${multi ? `${sideLabel(arm.side)} rep` : 'Rep'} ${r.index}: ${formatTime(r.startMs)} to ${formatTime(r.tsMs)}${
+                          p.fullDepth !== undefined ? `, deepest bend ${r.bottomAngle}°${r.shallow ? ' (could go deeper)' : ''}` : ''
+                        }`}
                         className="group inline-flex h-8 items-center gap-1.5 rounded-lg bg-canvas pl-1.5 pr-2.5 text-[13px] font-medium text-ink-2 transition hover:bg-ink hover:text-white"
                       >
                         <span
                           className="flex h-5 min-w-5 items-center justify-center rounded-md px-1 text-[11px] font-bold tabular-nums text-white"
-                          style={{ backgroundColor: multi ? armColor(arm.side).solid : '#121211' }}
+                          style={{ backgroundColor: r.shallow ? '#f59e0b' : multi ? armColor(arm.side).solid : '#121211' }}
                         >
                           {r.index}
                         </span>
                         <span className="tabular-nums">{formatTime(r.startMs)}</span>
+                        {p.fullDepth !== undefined && (
+                          <span className={`tabular-nums text-[11px] ${r.shallow ? 'font-semibold text-amber-700 group-hover:text-amber-300' : 'text-ink-3 group-hover:text-white/60'}`}>
+                            {r.bottomAngle}°
+                          </span>
+                        )}
                       </button>
                     ))}
                   </div>
@@ -279,6 +315,12 @@ export function ResultsPanel(p: Props) {
       </div>
     </Card>
   );
+}
+
+/** "1", "1 and 2", "1, 2 and 3". */
+function joinList(items: string[]): string {
+  if (items.length <= 1) return items.join('');
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
 }
 
 function ArmCount({

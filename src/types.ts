@@ -22,6 +22,8 @@ export interface SessionSummary {
   reps: number;
   /** Confirmed count per arm, for both-arm sets only. */
   perArm?: { left: number; right: number };
+  /** Reps that were counted but did not reach full depth (squats). */
+  shallowReps?: number;
   effort: Effort;
 }
 
@@ -31,6 +33,10 @@ export interface RepEvent {
   tsMs: number;
   /** Media time the rep began (last extended frame before flexing). */
   startMs: number;
+  /** Smallest (smoothed) joint angle reached during the rep, in degrees. */
+  bottomAngle: number;
+  /** Counted, but did not bend as far as the exercise's full-depth angle. */
+  shallow: boolean;
 }
 
 /** One sampled frame of analysis input, consumed by the pure rep counter. */

@@ -55,6 +55,8 @@ interface ScanState {
 }
 
 const METADATA_TIMEOUT_MS = 12_000;
+/** Timeline and chip color for reps that were counted but could go deeper. */
+const SHALLOW_COLOR = '#f59e0b';
 /** Below this tracked fraction (best arm), the count is called unreliable. */
 const UNRELIABLE_TRACKING = 0.3;
 
@@ -342,7 +344,15 @@ export default function App() {
       const perArm = { right: at('right'), left: at('left') };
       summary = { ...base, side: null, mode: 'both', perArm, reps: progressionReps(perArm.right, perArm.left) };
     } else {
-      summary = { ...base, side: exercise.sided ? side : null, mode: 'one', reps: counts[0] ?? 0 };
+      const reps = counts[0] ?? 0;
+      const shallow = Math.min(reps, result.arms[0]?.reps.filter((r) => r.shallow).length ?? 0);
+      summary = {
+        ...base,
+        side: exercise.sided ? side : null,
+        mode: 'one',
+        reps,
+        ...(shallow > 0 ? { shallowReps: shallow } : {}),
+      };
     }
     setSessions(addSession(summary));
     setSaved(true);
@@ -369,8 +379,15 @@ export default function App() {
       arm.reps.map((r) => ({
         key: `${arm.side ?? 'x'}-${r.index}`,
         ms: r.startMs,
-        color: armColor(arm.side).solid,
+        endMs: r.tsMs,
+        color: r.shallow ? SHALLOW_COLOR : armColor(arm.side).solid,
         label: multiArm ? `${arm.side === 'left' ? 'Left' : 'Right'} rep ${r.index}` : `Rep ${r.index}`,
+        note:
+          exercise.fullDepth === undefined
+            ? undefined
+            : r.shallow
+              ? { text: `Counted · go deeper (${r.bottomAngle}°)`, tone: 'warn' as const }
+              : { text: 'Good depth', tone: 'good' as const },
       })),
     ) ?? [];
   const armViews: ArmResultView[] =
@@ -500,6 +517,7 @@ export default function App() {
                 <ResultsPanel
                   arms={armViews}
                   limb={exercise.limb}
+                  fullDepth={exercise.fullDepth}
                   weightNote={exercise.weightNote}
                   allowBodyweight={exercise.allowBodyweight}
                   settings={settings}

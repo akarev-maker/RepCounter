@@ -51,8 +51,15 @@ export interface ExerciseDef {
     left: [number, number, number];
     right: [number, number, number];
   };
-  /** Angle at or below this = movement is in the flexed (bottom) position. */
+  /** Angle at or below this = movement is in the flexed (bottom) position; the rep counts. */
   flexEnter: number;
+  /**
+   * Optional angle for full depth. Reps that reach flexEnter but not this
+   * still count, and are flagged so the user can go deeper next time.
+   */
+  fullDepth?: number;
+  /** Optional shortest rep in ms; quicker dips (e.g. walking) are ignored. */
+  minRepMs?: number;
   /** Angle at or above this = movement is in the extended (top) position. */
   extendEnter: number;
   /** Short hint shown in the UI about how to film. */
@@ -91,10 +98,11 @@ export const EXERCISES: Record<string, ExerciseDef> = {
     defaults: { repRangeMin: 8, repRangeMax: 12, increment: 5, unit: 'lb' },
   },
   /**
-   * Knee angle (hip-knee-ankle). Thresholds come from recorded pose data on
-   * four free Pexels squat clips (see manual-test-notes.md): the bottom of a
-   * rep measured 58-117 deg depending on depth and camera angle, standing
-   * measured 162-180 deg.
+   * Knee angle (hip-knee-ankle). On four free Pexels squat clips the bottom
+   * of a rep measured 58-117 deg and standing 162-180 deg (see
+   * manual-test-notes.md). A real user filming from hip height bottomed out
+   * around 130 deg on squats they considered deep, so reps count from 140 deg
+   * and anything above 110 deg is flagged as shallow rather than dropped.
    */
   squat: {
     id: 'squat',
@@ -115,9 +123,11 @@ export const EXERCISES: Record<string, ExerciseDef> = {
       left: [LM.LEFT_HIP, LM.LEFT_KNEE, LM.LEFT_ANKLE],
       right: [LM.RIGHT_HIP, LM.RIGHT_KNEE, LM.RIGHT_ANKLE],
     },
-    flexEnter: 110,
+    flexEnter: 140,
+    fullDepth: 110,
+    minRepMs: 600,
     extendEnter: 155,
-    filmingHint: 'Counts each full squat from the bend at your knees. Film from the side, whole body in frame.',
+    filmingHint: 'Counts each squat from the bend at your knees, and flags reps that could go deeper. Film from the side, whole body in frame.',
     defaults: { repRangeMin: 8, repRangeMax: 12, increment: 10, unit: 'lb' },
   },
 };

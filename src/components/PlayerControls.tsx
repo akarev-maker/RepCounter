@@ -13,6 +13,9 @@ export interface RepMarker {
   ms: number;
   color: string;
   label: string;
+  /** When the rep finished, and a short note shown on the video right after. */
+  endMs?: number;
+  note?: { text: string; tone: 'good' | 'warn' };
 }
 
 interface Props {

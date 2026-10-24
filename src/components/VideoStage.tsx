@@ -34,6 +34,9 @@ interface HudArm {
   lost: boolean;
 }
 
+/** How long a rep's note stays on the video after the rep finishes. */
+const NOTE_MS = 1500;
+
 const armShort = (side: Side | null) => (side === 'left' ? 'L' : side === 'right' ? 'R' : '');
 
 export function VideoStage(props: Props) {
@@ -156,6 +159,9 @@ function LoadedStage({
   const [dims, setDims] = useState<{ vw: number; vh: number } | null>(null);
   const [durationMs, setDurationMs] = useState(0);
   const [hud, setHud] = useState<HudArm[]>([]);
+  const [note, setNote] = useState<RepMarker | null>(null);
+  const markersRef = useRef(markers);
+  markersRef.current = markers;
 
   // Draw loop: replay stored analysis for whatever frame is on screen.
   useEffect(() => {
@@ -184,6 +190,7 @@ function LoadedStage({
     let raf = 0;
     let lastKey = '';
     let lastHud = '';
+    let lastNote = '';
     const tick = () => {
       const tracks = tracksRef.current ?? [];
       const tMs = video.currentTime * 1000;
@@ -211,6 +218,11 @@ function LoadedStage({
       if (hk !== lastHud) {
         lastHud = hk;
         setHud(h);
+      }
+      const n = markersRef.current.find((m) => m.note && m.endMs !== undefined && tMs >= m.endMs && tMs < m.endMs + NOTE_MS);
+      if ((n?.key ?? '') !== lastNote) {
+        lastNote = n?.key ?? '';
+        setNote(n ?? null);
       }
       raf = requestAnimationFrame(tick);
     };
@@ -279,11 +291,11 @@ function LoadedStage({
           {/* HUD */}
           <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-3">
             {showCounts && hud.length > 0 ? (
-              <div className="flex flex-col gap-1.5">
+              <div className="flex shrink-0 flex-col gap-1.5">
                 {hud.map((arm, i) => (
                   <span
                     key={arm.side ?? i}
-                    className="inline-flex items-center gap-1.5 self-start rounded-full bg-black/70 px-3 py-1.5 text-[13px] font-semibold text-white backdrop-blur"
+                    className="inline-flex items-center gap-1.5 self-start whitespace-nowrap rounded-full bg-black/70 px-3 py-1.5 text-[13px] font-semibold text-white backdrop-blur"
                   >
                     {multi && (
                       <span
@@ -303,6 +315,15 @@ function LoadedStage({
               </div>
             ) : (
               <span />
+            )}
+            {note?.note && !analyzing && lostArms.length === 0 && (
+              <span
+                className={`rounded-full px-3 py-1.5 text-[13px] font-semibold shadow ${
+                  note.note.tone === 'warn' ? 'bg-amber-400 text-black' : 'bg-emerald-500 text-white'
+                }`}
+              >
+                {note.note.text}
+              </span>
             )}
             {lostArms.length > 0 && (
               <span className="rounded-full bg-amber-400 px-3 py-1.5 text-[13px] font-semibold text-black">

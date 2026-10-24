@@ -264,3 +264,53 @@ describe('RepCounter on the user\'s gym test clips (recorded pose output)', () =
     expect(right.reps).toHaveLength(0);
   });
 });
+
+describe('RepCounter depth: counted reps that could go deeper', () => {
+  // Squat-style settings: counts from 140 deg, full depth at 110 deg or lower.
+  const cfg = { flexEnter: 140, fullDepth: 110, extendEnter: 155, minRepMs: 600 };
+  const rep = (bottom: number, t0: number, frames = 10, stepMs = 100) => {
+    const out: AngleSample[] = [];
+    let t = t0;
+    for (let i = 0; i < 5; i++) out.push({ tsMs: (t += stepMs), angle: 170, minVisibility: 0.9 });
+    for (let i = 0; i < frames; i++) out.push({ tsMs: (t += stepMs), angle: bottom, minVisibility: 0.9 });
+    for (let i = 0; i < 5; i++) out.push({ tsMs: (t += stepMs), angle: 170, minVisibility: 0.9 });
+    return out;
+  };
+
+  it('counts a rep that bottoms at 130 deg and flags it as shallow, with the measured angle', () => {
+    const snap = countSequence(rep(130, 0), cfg);
+    expect(snap.count).toBe(1);
+    expect(snap.reps[0].shallow).toBe(true);
+    expect(snap.reps[0].bottomAngle).toBe(130);
+  });
+
+  it('does not flag a rep that reaches full depth', () => {
+    const snap = countSequence(rep(95, 0), cfg);
+    expect(snap.count).toBe(1);
+    expect(snap.reps[0].shallow).toBe(false);
+    expect(snap.reps[0].bottomAngle).toBe(95);
+  });
+
+  it('flags each rep on its own: deep, shallow, deep', () => {
+    const snap = countSequence([...rep(95, 0), ...rep(128, 3000), ...rep(100, 6000)], cfg);
+    expect(snap.reps.map((r) => r.shallow)).toEqual([false, true, false]);
+  });
+
+  it('does not count a bend that never reaches 140 deg', () => {
+    expect(countSequence(rep(145, 0), cfg).count).toBe(0);
+  });
+
+  it('ignores a dip quicker than the shortest rep, such as a step while walking', () => {
+    // Bends to 130 for 3 frames: long enough to get through smoothing, but
+    // the whole dip lasts about half a second.
+    const dip = rep(130, 0, 3);
+    expect(countSequence(dip, { ...cfg, minRepMs: undefined }).count).toBe(1);
+    expect(countSequence(dip, cfg).count).toBe(0);
+  });
+
+  it('exercises without a full-depth angle never flag reps (curls)', () => {
+    const snap = countSequence(rep(40, 0), { flexEnter: 70, extendEnter: 150 });
+    expect(snap.count).toBe(1);
+    expect(snap.reps[0].shallow).toBe(false);
+  });
+});

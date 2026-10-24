@@ -46,6 +46,27 @@ describe('squat counting on real clips (recorded pose output)', () => {
     expect(r.count).toBe(2);
   });
 
+  it('one shallow rep: all 3 count, and only the shallow one (about 123 deg) is flagged', async () => {
+    const r = await run('squat-one-shallow');
+    expect(r.count).toBe(3);
+    expect(r.reps.map((x) => x.shallow)).toEqual([true, false, false]);
+    expect(r.reps[0].bottomAngle).toBeGreaterThan(115);
+    expect(r.reps[0].bottomAngle).toBeLessThan(130);
+  });
+
+  it('front view, deep reps: 4 squats, none flagged', async () => {
+    const r = await run('squat-front-deep');
+    expect(r.count).toBe(4);
+    expect(r.reps.every((x) => !x.shallow)).toBe(true);
+  });
+
+  it('deep reps on the earlier clips are not flagged', async () => {
+    for (const name of ['squat-side-slow', 'squat-three-quarter', 'squat-front-cut-off']) {
+      const r = await run(name);
+      expect(r.reps.every((x) => !x.shallow)).toBe(true);
+    }
+  });
+
   it('knees out of frame: no reps invented, and tracking is reported as poor', async () => {
     const r = await run('squat-knees-out-of-frame');
     expect(r.count).toBe(0);
