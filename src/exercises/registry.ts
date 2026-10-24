@@ -86,6 +86,13 @@ export interface ExerciseDef {
    * stay in real joint angles; the scorer flips them (180 - x) for the counter.
    */
   startsBent?: boolean;
+  /**
+   * Seated machines: largest shoulder-hip-knee angle that still counts as
+   * sitting on the machine. Above it (standing up, walking off) frames are
+   * not counted and any rep in progress is dropped, so standing up from the
+   * seat is never counted as a rep. Ignored when the shoulders aren't visible.
+   */
+  seatedHipMax?: number;
   /** Value at or below this = bottom position reached; the rep counts. */
   flexEnter: number;
   /**
@@ -205,7 +212,7 @@ export const EXERCISES: Record<string, ExerciseDef> = {
     framingAdvice: 'Tracking needs your hip, knee and ankle in frame from the side, with the phone held still.',
     filmingTips: [
       { t: 'Film from the side', d: 'Set the phone square to the machine so your knee bend is seen side-on.' },
-      { t: 'Hip to ankle in frame', d: 'Step the phone back far enough that hip, knee and ankle stay visible at the bottom and top.' },
+      { t: 'Shoulders to ankles in frame', d: 'Step the phone back far enough that your shoulder, hip, knee and ankle stay visible. Shoulders let it ignore you standing up.' },
       { t: 'Steady phone', d: 'Prop it on the floor or a bench. The near leg is the one that gets tracked.' },
     ],
     landmarks: {
@@ -214,6 +221,8 @@ export const EXERCISES: Record<string, ExerciseDef> = {
     },
     // Counts from 125 deg so short-range presses still count; above 100 deg
     // they are flagged "go deeper". The clip's full presses reached 70-90 deg.
+    // Reclined: the real clip's hip angle stayed at 43-89 deg. Standing is about 175.
+    seatedHipMax: 135,
     flexEnter: 125,
     fullDepth: 100,
     minRepMs: 600,
@@ -249,13 +258,15 @@ export const EXERCISES: Record<string, ExerciseDef> = {
     framingAdvice: 'Tracking needs your hip, knee and ankle in frame from the side, with the phone held still.',
     filmingTips: [
       { t: 'Film from the side', d: 'Set the phone square to the machine so your knee bend is seen side-on.' },
-      { t: 'Hip to ankle in frame', d: 'Keep hip, knee and ankle visible with your legs bent and straight.' },
+      { t: 'Shoulders to ankles in frame', d: 'Keep shoulder, hip, knee and ankle visible with your legs bent and straight. Shoulders let it ignore you standing up.' },
       { t: 'Steady phone', d: 'Prop it on the floor or a bench, a couple of steps away. The near leg is the one that gets tracked.' },
     ],
     landmarks: {
       left: [LM.LEFT_HIP, LM.LEFT_KNEE, LM.LEFT_ANKLE],
       right: [LM.RIGHT_HIP, LM.RIGHT_KNEE, LM.RIGHT_ANKLE],
     },
+    // Upright seat: hip angle about 90-120 deg. Standing is about 175.
+    seatedHipMax: 135,
     // Rest (bent) at 115 deg or less. A lift to 135 deg counts; below 155 deg
     // it is flagged "straighten more".
     flexEnter: 115,

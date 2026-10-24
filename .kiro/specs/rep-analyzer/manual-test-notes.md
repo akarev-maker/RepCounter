@@ -2,7 +2,7 @@
 
 Last updated: 2026-10-24. Separates what was actually run from what is assumed.
 
-## Automated unit tests (`npm test`, 71 passing)
+## Automated unit tests (`npm test`, 77 passing)
 
 `src/analysis/legMachines.test.ts`: leg press landmarks from a free Pexels
 clip through the real scoring path, and synthetic seated knee-angle traces for
@@ -245,6 +245,18 @@ back down. Lifts that never reach 155° are flagged "straighten more".
 A synthetic leg press with a press to 115° counts it and flags it "go
 deeper". After this change the shallow-squat clip (Pexels 8435486) still
 counts 3 in the browser with only rep 1 flagged.
+
+Getting on and off the machine (`src/analysis/legMachineSetup.test.ts`,
+synthetic side-view poses of a whole set: walk up, sit, set, stand up, walk
+off). Walking, sitting down and leg extension stand-ups already counted
+correctly. One leg press case failed: bringing the feet down off the platform
+and standing up looks exactly like one more press (knee bends then
+straightens), so it counted **4 instead of 3**. Fix: for both machines, a
+frame where the shoulder-hip-knee angle is over 135° (standing; the real leg
+press clip stays at 43–89°, a seated extension at about 90–120°) is not
+counted and drops any rep in progress. This needs the shoulders in frame.
+Without them the stand-up is not caught, and that test documents the extra
+rep. Real leg press clip after the change: still 5.
 
 The 145° top for leg press was chosen because some presses on the clip
 pause at 145–150° on the way up. A heavier set with a shorter range, or a
