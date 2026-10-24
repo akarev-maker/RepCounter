@@ -28,11 +28,12 @@ secure page: `localhost`, or the site served over https.
    return to extension. Low-confidence frames pause counting rather than
    guessing.
    - Curl: elbow (shoulder–elbow–wrist), bent ≤ 70°, straight ≥ 150°.
-   - Squat: knee (hip–knee–ankle). A rep counts once the knee bends to 140°
-     and you stand back up to 155°. Reps that never get to 110° still count
-     but are marked "go deeper", with the measured angle. Both legs are
-     averaged when both are clearly visible; otherwise the more visible leg
-     is used.
+   - Squat: hip height, using only the vertical positions of hip, knee and
+     ankle, so it works filmed from the side or the front. Depth is shown as
+     a percentage: 100% means the hips came down level with the knees. A rep
+     counts at 20% depth and once you stand back up; reps that never reach
+     45% still count but are marked "go deeper". Both legs are averaged when
+     both are clearly visible; otherwise the more visible leg is used.
 3. Each rep gets a timestamp you can click to jump to it in the video.
 4. The next-set target uses double progression: add reps within your range, and
    add weight only after hitting the top of the range on two sets in a row.
@@ -47,7 +48,7 @@ secure page: `localhost`, or the site served over https.
   and Safari on macOS; Firefox can't decode HEVC.
 - Filming: phone held still. Curls need the shoulder and torso in frame, and
   front-facing is best for both-arm sets. Squats need hips, knees and ankles
-  in frame, and a side or three-quarter view works best.
+  in frame; side, three-quarter and front views all work.
 
 ## Run it
 

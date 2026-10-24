@@ -30,8 +30,8 @@ interface Props {
   arms: ArmResultView[];
   /** Body part being tracked, for wording ("arm", "leg"). */
   limb: 'arm' | 'leg';
-  /** Full-depth angle for exercises that flag shallow reps (squats). */
-  fullDepth?: number;
+  /** Depth wording for exercises that flag shallow reps (squats). */
+  depth?: { format: (bottom: number) => string; target: string; explain: string };
   weightNote: string;
   allowBodyweight: boolean;
   settings: ProgressionSettings;
@@ -154,7 +154,7 @@ export function ResultsPanel(p: Props) {
           </div>
         )}
 
-        {p.fullDepth !== undefined && allReps.length > 0 && (
+        {p.depth && allReps.length > 0 && (
           <div
             className={`mt-3 rounded-xl border px-3.5 py-3 text-[13px] leading-snug ${
               shallowReps.length ? 'border-amber-200 bg-amber-50 text-amber-950' : 'border-emerald-200 bg-emerald-50 text-emerald-900'
@@ -162,7 +162,8 @@ export function ResultsPanel(p: Props) {
           >
             {shallowReps.length === 0 ? (
               <>
-                <span className="font-semibold">Good depth on every rep.</span> Each one bent to {p.fullDepth}° or lower.
+                <span className="font-semibold">Good depth on every rep.</span> Each one reached {p.depth.target}.{' '}
+                {p.depth.explain}
               </>
             ) : (
               <>
@@ -171,9 +172,9 @@ export function ResultsPanel(p: Props) {
                     ? 'All reps counted, but none reached full depth.'
                     : `${shallowReps.length} of ${allReps.length} reps could go deeper.`}
                 </span>{' '}
-                {shallowReps.length === 1 ? 'Rep' : 'Reps'} {joinList(shallowReps.map((r) => String(r.index)))} bent to{' '}
-                {joinList(shallowReps.map((r) => `${r.bottomAngle}°`))}. They still count. Aim for {p.fullDepth}° or lower.
-                The angle depends on the camera view, so compare sets filmed the same way.
+                {shallowReps.length === 1 ? 'Rep' : 'Reps'} {joinList(shallowReps.map((r) => String(r.index)))} reached{' '}
+                {joinList(shallowReps.map((r) => p.depth!.format(r.bottomAngle)))} depth. They still count. Aim for{' '}
+                {p.depth.target}. {p.depth.explain}
               </>
             )}
           </div>
@@ -193,7 +194,7 @@ export function ResultsPanel(p: Props) {
                         type="button"
                         onClick={() => p.onSeek(r.startMs)}
                         title={`${multi ? `${sideLabel(arm.side)} rep` : 'Rep'} ${r.index}: ${formatTime(r.startMs)} to ${formatTime(r.tsMs)}${
-                          p.fullDepth !== undefined ? `, deepest bend ${r.bottomAngle}°${r.shallow ? ' (could go deeper)' : ''}` : ''
+                          p.depth ? `, ${p.depth.format(r.bottomAngle)} depth${r.shallow ? ' (could go deeper)' : ''}` : ''
                         }`}
                         className="group inline-flex h-8 items-center gap-1.5 rounded-lg bg-canvas pl-1.5 pr-2.5 text-[13px] font-medium text-ink-2 transition hover:bg-ink hover:text-white"
                       >
@@ -204,9 +205,9 @@ export function ResultsPanel(p: Props) {
                           {r.index}
                         </span>
                         <span className="tabular-nums">{formatTime(r.startMs)}</span>
-                        {p.fullDepth !== undefined && (
+                        {p.depth && (
                           <span className={`tabular-nums text-[11px] ${r.shallow ? 'font-semibold text-amber-700 group-hover:text-amber-300' : 'text-ink-3 group-hover:text-white/60'}`}>
-                            {r.bottomAngle}°
+                            {p.depth.format(r.bottomAngle)}
                           </span>
                         )}
                       </button>

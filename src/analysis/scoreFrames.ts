@@ -40,7 +40,9 @@ export function createScorer(exercise: ExerciseDef, side: Side | null, aspect: n
     if (!a || !b || !c) return null;
     const pts: [Pt, Pt, Pt] = [a, b, c];
     const deg = jointAngle(a, b, c, aspect);
-    return { pts, angle: Number.isNaN(deg) ? null : deg, vis: minVisibility(pts) };
+    const angle = Number.isNaN(deg) ? null : deg;
+    const value = exercise.measure === 'hipHeight' ? hipHeight(a, b, c) : angle;
+    return { pts, angle, value, vis: minVisibility(pts) };
   };
 
   const score = (pf: PoseFrame): AnalyzedFrame => {
@@ -49,23 +51,39 @@ export function createScorer(exercise: ExerciseDef, side: Side | null, aspect: n
     // Otherwise use the most visible limb (if that is below the visibility
     // bar, the counter treats the frame as low confidence).
     const ms = triplets.map((t) => measure(pf, t)).filter((m) => m !== null);
-    const good = ms.filter((m) => m.angle !== null && m.vis >= MIN_VISIBILITY);
+    const good = ms.filter((m) => m.value !== null && m.vis >= MIN_VISIBILITY);
     const best = ms.reduce<(typeof ms)[number] | null>((b, m) => (!b || m.vis > b.vis ? m : b), null);
     const pts = best?.pts ?? null;
-    const angle =
-      good.length > 1 ? good.reduce((sum, m) => sum + m.angle!, 0) / good.length : (best?.angle ?? null);
+    const value =
+      good.length > 1 ? good.reduce((sum, m) => sum + m.value!, 0) / good.length : (best?.value ?? null);
     const vis = best?.vis ?? 0;
-    const snap = counter.push({ tsMs: pf.tMs, angle, minVisibility: vis });
+    const snap = counter.push({ tsMs: pf.tMs, angle: value, minVisibility: vis });
+    let label: string | null = null;
+    if (value !== null) {
+      label = exercise.measure === 'hipHeight' && exercise.depth ? `${exercise.depth.format(value)} depth` : `${Math.round(value)}\u00b0`;
+    }
     return {
       tMs: pf.tMs,
       pts,
-      angle,
-      confident: angle !== null && vis >= MIN_VISIBILITY,
+      angle: best?.angle ?? null,
+      label,
+      confident: value !== null && vis >= MIN_VISIBILITY,
       trackingLost: snap.trackingLost,
       count: snap.count,
     };
   };
   return { score, reps: (): RepEvent[] => counter.snapshot().reps };
+}
+
+/**
+ * Hip height above the knee as a percentage of shin length, from vertical
+ * image positions only (y grows downward). Null when the shin is too short
+ * on screen to measure, e.g. the legs are out of frame or the person is lying down.
+ */
+export function hipHeight(hip: Pt, knee: Pt, ankle: Pt): number | null {
+  const shin = ankle.y - knee.y;
+  if (shin < 0.02) return null;
+  return ((knee.y - hip.y) / shin) * 100;
 }
 
 export function scoreFrames(

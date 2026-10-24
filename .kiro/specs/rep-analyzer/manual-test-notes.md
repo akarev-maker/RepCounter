@@ -2,15 +2,16 @@
 
 Last updated: 2026-10-24. Separates what was actually run from what is assumed.
 
-## Automated unit tests (`npm test`, 51 passing)
+## Automated unit tests (`npm test`, 52 passing)
 
 Includes recorded angle sequences from six real clips: the Pexels clip (4 reps,
 left arm), the user's first iPhone clip (6 reps, right arm), and the user's four
 labeled gym clips (see the gym section below).
 
-`src/analysis/squat.test.ts`: hip, knee and ankle landmarks recorded from four
-free Pexels squat clips are run through the real scoring path (leg selection
-plus counter). See the squat section below for the clips and counts.
+`src/analysis/squat.test.ts`: hip, knee and ankle landmarks recorded from six
+free Pexels squat clips and the user's front-view squat recording are run
+through the real scoring path (leg selection plus counter). See the squat
+sections below for the clips and counts.
 
 `src/counting/balance.test.ts`: a one-rep difference is flagged and names the
 arm with more reps; even counts; only one arm moved; neither arm moved; the
@@ -113,8 +114,33 @@ ignored, so a step while walking into frame is not a rep.
 
 Curl counts are unchanged (alternating clip still R5/L4).
 
-The user's own clips at 130° have not been run; the user should confirm on
-the phone.
+## Squat by hip height (replaces the knee angle)
+
+Changed after the user's front-view recording (`Squats_analyzed.mov`, a screen
+recording of the app with its overlay drawn on top, cropped to the phone
+video). From the front the knee angle only read 121–148° even on deep reps,
+so the 140° rule counted **1**.
+
+New measure: (knee.y − hip.y) / (ankle.y − knee.y) × 100, vertical positions
+only, so it does not depend on camera angle the way the 2D knee angle does.
+Shown as depth = 100 − value (100% = hips level with knees). Rep starts at a
+value ≤ 80 (20% depth), counts after standing back to ≥ 95, shallow if the
+lowest value stays above 55 (below 45% depth), minimum rep 0.6 s.
+
+| Clip | True count | Detected |
+|---|---|---|
+| User's front-view recording | **assumed 6** (not confirmed by the user) | **6**; rep 1 flagged "go deeper", rep 2 the deepest |
+| Pexels 9001924 (side), in the browser | 3 | **3** |
+| Pexels fixtures (side, three-quarter, front, cut-off, out of frame, one shallow) | 3, 5, 2, 0, 3, 4 | same; the known shallow rep is still the only one flagged |
+| Alternating curls (regression) | R5 / L4 | **R5 / L4** |
+
+Rejected: standing line at 90 instead of 95. The user's rep 1 then lasted
+under 0.6 s and was dropped.
+
+Not verified: the user's real count, the original (non-screen-recorded) clip,
+and whether 45% is the right "good depth" line for most people. The 45% line
+comes from the Pexels clips: the visibly shallow rep read 39% and deep reps
+read 50% or more.
 
 ## In-browser recording (headless Chrome, fake camera)
 
@@ -140,9 +166,9 @@ switch, and camera-permission denial.
    Mirrors and other people in frame were not tested; MediaPipe tracks one
    person, which may not be the lifter.
 2. **Squats filmed by the user, loaded squats, and other squat styles.** No
-   barbell clip was tested; a bar or plates can hide the hips. Partial
-   (above-parallel) squats that never bend below 110° are not counted, and
-   very deep squats filmed from the front have not been checked.
+   barbell clip was tested; a bar or plates can hide the hips. Quarter squats
+   under 20% depth are not counted. Only one user recording (a screen
+   recording, count assumed) has been run.
 3. **Safari / iOS Safari and Firefox.** Only Chrome on macOS was run. Firefox
    does not decode HEVC, so iPhone `.mov` files will show the HEVC message
    there. iOS Safari seeking speed and `drawImage` rotation handling are

@@ -383,11 +383,11 @@ export default function App() {
         color: r.shallow ? SHALLOW_COLOR : armColor(arm.side).solid,
         label: multiArm ? `${arm.side === 'left' ? 'Left' : 'Right'} rep ${r.index}` : `Rep ${r.index}`,
         note:
-          exercise.fullDepth === undefined
+          !exercise.depth
             ? undefined
             : r.shallow
-              ? { text: `Counted · go deeper (${r.bottomAngle}°)`, tone: 'warn' as const }
-              : { text: 'Good depth', tone: 'good' as const },
+              ? { text: `Counted · go deeper (${exercise.depth.format(r.bottomAngle)})`, tone: 'warn' as const }
+              : { text: `Good depth · ${exercise.depth.format(r.bottomAngle)}`, tone: 'good' as const },
       })),
     ) ?? [];
   const armViews: ArmResultView[] =
@@ -517,7 +517,7 @@ export default function App() {
                 <ResultsPanel
                   arms={armViews}
                   limb={exercise.limb}
-                  fullDepth={exercise.fullDepth}
+                  depth={exercise.depth}
                   weightNote={exercise.weightNote}
                   allowBodyweight={exercise.allowBodyweight}
                   settings={settings}

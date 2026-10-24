@@ -104,13 +104,13 @@ function drawLimb(ctx: CanvasRenderingContext2D, { frame, color }: OverlayLimb, 
     ctx.stroke();
   }
 
-  // Angle label, placed outside the angle so it never covers the limb.
-  if (frame.angle !== null) {
+  // Label (angle or depth), placed outside the angle so it never covers the limb.
+  if (frame.label) {
     const out = ta + delta / 2 + Math.PI;
     const dist = arcR + 26 * unit;
     const lx = b.x + Math.cos(out) * dist;
     const ly = b.y + Math.sin(out) * dist;
-    const label = `${Math.round(frame.angle)}\u00b0`;
+    const label = frame.label;
     const fontPx = Math.round(13 * unit);
     ctx.font = `600 ${fontPx}px Inter, system-ui, sans-serif`;
     const tw = ctx.measureText(label).width;

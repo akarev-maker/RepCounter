@@ -33,9 +33,12 @@ export interface RepEvent {
   tsMs: number;
   /** Media time the rep began (last extended frame before flexing). */
   startMs: number;
-  /** Smallest (smoothed) joint angle reached during the rep, in degrees. */
+  /**
+   * Lowest (smoothed) value reached during the rep, in the exercise's
+   * measure: degrees for curls, hip height for squats (see registry).
+   */
   bottomAngle: number;
-  /** Counted, but did not bend as far as the exercise's full-depth angle. */
+  /** Counted, but did not reach the exercise's full-depth value. */
   shallow: boolean;
 }
 
@@ -74,6 +77,8 @@ export interface AnalyzedFrame {
   /** Normalized [proximal, joint, distal] points, or null if no pose. */
   pts: [NormPoint, NormPoint, NormPoint] | null;
   angle: number | null;
+  /** Text drawn next to the joint, e.g. "92°" or "45% depth". */
+  label: string | null;
   confident: boolean;
   trackingLost: boolean;
   /** Reps completed up to and including this frame. */

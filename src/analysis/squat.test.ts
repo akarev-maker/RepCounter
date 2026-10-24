@@ -46,12 +46,23 @@ describe('squat counting on real clips (recorded pose output)', () => {
     expect(r.count).toBe(2);
   });
 
-  it('one shallow rep: all 3 count, and only the shallow one (about 123 deg) is flagged', async () => {
+  it('one shallow rep: all 3 count, and only the visibly shallow one is flagged', async () => {
     const r = await run('squat-one-shallow');
     expect(r.count).toBe(3);
     expect(r.reps.map((x) => x.shallow)).toEqual([true, false, false]);
-    expect(r.reps[0].bottomAngle).toBeGreaterThan(115);
-    expect(r.reps[0].bottomAngle).toBeLessThan(130);
+  });
+
+  it("user's front-view squats: all 6 count (the knee angle only counted 1)", async () => {
+    // From the front the knees read 121-148 deg at the bottom, so most reps
+    // never passed a knee-angle threshold. Hip height drops clearly on every rep.
+    const r = await run('user-squat-front');
+    expect(r.count).toBe(6);
+    expect(r.trackedFraction).toBeGreaterThan(0.9);
+    // Rep 2 was visibly the deepest; rep 1 the shallowest.
+    const deepest = r.reps.reduce((a, b) => (b.bottomAngle < a.bottomAngle ? b : a));
+    expect(deepest.index).toBe(2);
+    expect(deepest.shallow).toBe(false);
+    expect(r.reps[0].shallow).toBe(true);
   });
 
   it('front view, deep reps: 4 squats, none flagged', async () => {
