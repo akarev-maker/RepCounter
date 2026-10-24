@@ -96,6 +96,24 @@ bodyweight, inside your 3–5 range."
 Curl regressions after the squat changes: alternating R5/L4, quick 5, and the
 moving-camera clip (0 reps, warning) are unchanged.
 
+## In-browser recording (headless Chrome, fake camera)
+
+Chrome was given a fake webcam that plays the Pexels 9001924 squat clip
+(scaled to 360×640, 24 fps). The test clicks Record a set, sets the timer to
+Off, records, stops, and counts.
+
+| Run | Result |
+|---|---|
+| 21 s recording, MP4 (Chrome picks `video/mp4;codecs=avc1`) | 21.25 s clip, plays and seeks. **3 squats** at 0:00.8, 0:08.0, 0:15.1, matching the source clip. Replay unchanged. |
+| 21 s recording, WebM forced (MP4 disabled, like older Chrome) | Duration was missing from the header and was recovered by the seek-to-end fix: 21.17 s. **3 squats**. Analysis took 23.5 s against 7.2 s for MP4, because WebM recordings have no seek index. |
+| 6 s recording at 390×844 mobile | Camera screen scrolls into view and fills the width; counted 1 squat (the only full one in that window). |
+| Upload after the change | QuickCurls_5.MOV still counts 5. |
+
+Not verified: real phones (iOS Safari, Android Chrome), whether music keeps
+playing (no microphone is requested, which is what normally stops music on
+iOS, but this was not tried on a device), the wake lock, the back-camera
+switch, and camera-permission denial.
+
 ## Not yet tested (assumptions)
 
 1. **Curls with a real dumbbell held close to the camera, or in a busy gym.**

@@ -73,3 +73,9 @@ export const IconLock = (p: P) => (
     <path d="M8 11V8a4 4 0 0 1 8 0v3" />
   </Svg>
 );
+export const IconCamera = (p: P) => (
+  <Svg {...p}>
+    <rect x="3" y="6" width="13" height="12" rx="2" />
+    <path d="M16 10.5l5-3v9l-5-3" />
+  </Svg>
+);

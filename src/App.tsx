@@ -9,6 +9,7 @@ import { suggestNext } from './progression/progression';
 import { addSession, clearSessions, deleteSession, loadSessions, newId } from './storage/sessions';
 import { loadSettings, saveSettings } from './storage/settings';
 import { ACCEPTED_VIDEO_TYPES, describeDecodeFailure, probeVideoFile, type VideoProbe } from './video/probeVideo';
+import { ensureFiniteDuration } from './video/recorder';
 import type {
   AnalyzedFrame,
   ArmMode,
@@ -85,6 +86,8 @@ export default function App() {
   const [videoReady, setVideoReady] = useState(false);
   const [decodeError, setDecodeError] = useState<string | null>(null);
   const probeRef = useRef<VideoProbe | null>(null);
+  /** Whether the current (or last) clip was recorded here; the next set then opens the camera. */
+  const [recorded, setRecorded] = useState(false);
 
   // Setup
   const [exerciseId, setExerciseId] = useState(DEFAULT_EXERCISE_ID);
@@ -186,10 +189,16 @@ export default function App() {
     probeRef.current = await probeVideoFile(file);
   }
 
-  function handleLoadedMetadata(v: HTMLVideoElement) {
+  async function handleLoadedMetadata(v: HTMLVideoElement) {
     if (!v.videoWidth || !v.videoHeight) {
       // Some browsers load HEVC audio but cannot decode the picture.
       setDecodeError(describeDecodeFailure(probeRef.current));
+      return;
+    }
+    // In-browser recordings often have no duration in the header.
+    await ensureFiniteDuration(v);
+    if (!Number.isFinite(v.duration) || v.duration <= 0) {
+      setDecodeError('This browser couldn\u2019t read the length of the clip. Try recording again, or upload a video.');
       return;
     }
     setDecodeError(null);
@@ -421,11 +430,12 @@ export default function App() {
               {!videoUrl && (
                 <div className="mb-1">
                   <h1 className="text-balance text-[28px] font-bold leading-tight tracking-tight sm:text-[34px]">
-                    Count reps from a recorded set
+                    Count reps from your set
                   </h1>
                   <p className="mt-1.5 max-w-xl text-[15px] text-ink-2">
-                    Pose tracking runs in your browser and counts each full rep of curls (one arm or
-                    each arm separately) and squats. You confirm the numbers before anything is saved.
+                    Record a set right here or upload a clip. Pose tracking runs in your browser and
+                    counts each full rep of curls (one arm or each arm separately) and squats. You
+                    confirm the numbers before anything is saved.
                   </p>
                 </div>
               )}
@@ -440,8 +450,16 @@ export default function App() {
                 lostSpans={result?.arms.flatMap((a) => a.lostSpans) ?? []}
                 analyzing={analyzing}
                 decodeError={!!decodeError}
-                onPickFile={handleFile}
-                onLoadedMetadata={handleLoadedMetadata}
+                onPickFile={(f) => {
+                  setRecorded(false);
+                  void handleFile(f);
+                }}
+                preferCamera={recorded}
+                onRecorded={(f) => {
+                  setRecorded(true);
+                  void handleFile(f);
+                }}
+                onLoadedMetadata={(v) => void handleLoadedMetadata(v)}
                 onDecodeError={() => setDecodeError(describeDecodeFailure(probeRef.current))}
               />
 

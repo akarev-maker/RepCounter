@@ -4,7 +4,9 @@ import { frameAt } from '../analysis/analyzeVideo';
 import { ACCEPTED_VIDEO_TYPES } from '../video/probeVideo';
 import type { ArmTrack, Side } from '../types';
 import { PlayerControls, type RepMarker, type Span } from './PlayerControls';
-import { IconUpload } from './icons';
+import { IconCamera, IconUpload } from './icons';
+import { CameraStage } from './CameraStage';
+import { canRecord } from '../video/recorder';
 
 interface Props {
   videoUrl: string | null;
@@ -19,6 +21,9 @@ interface Props {
   analyzing: boolean;
   decodeError: boolean;
   onPickFile: (file: File) => void;
+  /** Open straight into the camera (the last set was recorded in the browser). */
+  preferCamera?: boolean;
+  onRecorded: (file: File) => void;
   onLoadedMetadata: (video: HTMLVideoElement) => void;
   onDecodeError: () => void;
 }
@@ -33,13 +38,27 @@ const armShort = (side: Side | null) => (side === 'left' ? 'L' : side === 'right
 
 export function VideoStage(props: Props) {
   const { videoUrl } = props;
-  if (!videoUrl) return <EmptyStage onPickFile={props.onPickFile} />;
+  if (!videoUrl) return <EmptyStage onPickFile={props.onPickFile} onRecorded={props.onRecorded} preferCamera={props.preferCamera} />;
   return <LoadedStage {...props} videoUrl={videoUrl} />;
 }
 
-function EmptyStage({ onPickFile }: { onPickFile: (f: File) => void }) {
+function EmptyStage({
+  onPickFile,
+  onRecorded,
+  preferCamera,
+}: {
+  onPickFile: (f: File) => void;
+  onRecorded: (f: File) => void;
+  preferCamera?: boolean;
+}) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [dragging, setDragging] = useState(false);
+  // On a non-https page the camera API is missing; still show Record so the
+  // camera screen can explain why it can't start.
+  const recordable = canRecord() || !window.isSecureContext;
+  const [camera, setCamera] = useState(!!preferCamera && recordable);
+
+  if (camera) return <CameraStage onRecorded={onRecorded} onClose={() => setCamera(false)} />;
 
   return (
     <div
@@ -67,19 +86,40 @@ function EmptyStage({ onPickFile }: { onPickFile: (f: File) => void }) {
 
       <div className="relative flex max-w-xs flex-col items-center">
         <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/[0.08] text-white ring-1 ring-white/10">
-          <IconUpload size={24} />
+          {recordable ? <IconCamera size={24} /> : <IconUpload size={24} />}
         </span>
-        <h2 className="mt-5 text-xl font-semibold tracking-tight text-white">Add a recorded set</h2>
+        <h2 className="mt-5 text-xl font-semibold tracking-tight text-white">
+          {recordable ? 'Record or add a set' : 'Add a recorded set'}
+        </h2>
         <p className="mt-1.5 text-sm leading-relaxed text-white/60">
-          Drop a clip here or choose one from your device. MOV, MP4 and WebM are supported.
+          {recordable
+            ? 'Film it here with your camera, or drop in a clip you already have (MOV, MP4, WebM).'
+            : 'Drop a clip here or choose one from your device. MOV, MP4 and WebM are supported.'}
         </p>
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          className="mt-6 inline-flex h-11 items-center gap-2 rounded-xl bg-white px-5 text-sm font-semibold text-ink transition hover:bg-white/90"
-        >
-          Choose video
-        </button>
+        <div className="mt-6 flex flex-wrap justify-center gap-2.5">
+          {recordable && (
+            <button
+              type="button"
+              onClick={() => setCamera(true)}
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-white px-5 text-sm font-semibold text-ink transition hover:bg-white/90"
+            >
+              <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
+              Record a set
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className={`inline-flex h-11 items-center gap-2 rounded-xl px-5 text-sm font-semibold transition ${
+              recordable
+                ? 'bg-white/[0.1] text-white ring-1 ring-white/15 hover:bg-white/[0.16]'
+                : 'bg-white text-ink hover:bg-white/90'
+            }`}
+          >
+            <IconUpload size={16} />
+            Upload video
+          </button>
+        </div>
         <p className="mt-4 text-xs text-white/40">The video stays on this device.</p>
       </div>
 
@@ -219,6 +259,11 @@ function LoadedStage({
               if (v.videoWidth && v.videoHeight) setDims({ vw: v.videoWidth, vh: v.videoHeight });
               setDurationMs(Number.isFinite(v.duration) ? v.duration * 1000 : 0);
               onLoadedMetadata(v);
+            }}
+            // Browser recordings often report their real duration only after a scan.
+            onDurationChange={(e) => {
+              const d = e.currentTarget.duration;
+              if (Number.isFinite(d) && d > 0) setDurationMs(d * 1000);
             }}
             onError={onDecodeError}
             onClick={() => {

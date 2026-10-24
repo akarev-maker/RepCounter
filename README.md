@@ -7,6 +7,15 @@ count, log the weight, and get a next-session target.
 Everything runs on your device. Videos are never uploaded or stored; only the
 set summary (date, exercise, weight, reps, effort) is saved to `localStorage`.
 
+## Recording in the browser
+
+Tap **Record a set** to film with the phone or laptop camera instead of
+uploading. It records video only, without the microphone, so music playing in
+another app isn't interrupted. There is a 0/3/5/10 s start timer, a front/back
+camera switch, and the screen is kept awake while recording. The recording is
+counted exactly like an uploaded clip and is never stored. The camera needs a
+secure page: `localhost`, or the site served over https.
+
 ## How it works
 
 1. The clip is sampled at 15 fps and each frame goes through the
