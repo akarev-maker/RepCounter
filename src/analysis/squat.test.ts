@@ -74,6 +74,21 @@ describe('squat counting on real clips (recorded pose output)', () => {
     });
   });
 
+  it("user's one-squat video that stops the moment they're back up: counts 1 (was 0)", async () => {
+    const r = await run('user-squat-ends-at-top');
+    expect(r.count).toBe(1);
+    expect(r.reps[0].shallow).toBe(false);
+    // The overlay counter shows the rep on the last frame too.
+    expect(r.frames[r.frames.length - 1].count).toBe(1);
+  });
+
+  it('a video that ends on the way up does not count that rep', async () => {
+    const fx = (await import('../counting/__fixtures__/user-squat-ends-at-top.json')).default as unknown as Fixture;
+    // Cut where the hips are only about 70% of the way back up.
+    const cut = { ...fx, frames: fx.frames.filter(([t]) => t <= 1467) };
+    expect(scoreFrames(toPoseFrames(cut), squat, null, fx.aspect).count).toBe(0);
+  });
+
   it('front view, deep reps: 4 squats, none flagged', async () => {
     const r = await run('squat-front-deep');
     expect(r.count).toBe(4);

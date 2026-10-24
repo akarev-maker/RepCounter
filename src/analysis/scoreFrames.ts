@@ -84,7 +84,12 @@ export function createScorer(exercise: ExerciseDef, side: Side | null, aspect: n
       count: snap.count,
     };
   };
-  return { score, reps: (): RepEvent[] => counter.snapshot().reps };
+  return {
+    score,
+    /** Call after the last frame; counts a rep the video ended right after. */
+    finish: (): RepEvent[] => counter.finish().reps,
+    reps: (): RepEvent[] => counter.snapshot().reps,
+  };
 }
 
 /** How far back 'hipDrop' looks for the standing height. */
@@ -157,7 +162,10 @@ export function scoreFrames(
 ): ScoredResult {
   const scorer = createScorer(exercise, side, aspect);
   const frames = poseFrames.map(scorer.score);
-  const reps = scorer.reps();
+  const reps = scorer.finish();
+  // A rep finished by `finish` happens after the last frame's count was taken.
+  const last = frames[frames.length - 1];
+  if (last && last.count < reps.length) frames[frames.length - 1] = { ...last, count: reps.length };
   const confident = frames.filter((f) => f.confident).length;
   return {
     frames,

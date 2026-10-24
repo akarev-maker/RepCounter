@@ -82,11 +82,17 @@ export async function analyzeVideo(
   const poseFrames: PoseFrame[] = [];
 
   video.pause();
-  const total = Math.max(1, Math.floor((duration * 1000) / stepMs));
+  // Evenly spaced samples, plus the very last frame: videos often stop the
+  // moment the user is back at the top, and that frame finishes the last rep.
+  const endMs = Math.max(0, Math.floor(duration * 1000) - 1);
+  const total = Math.max(1, Math.floor(endMs / stepMs) + 2);
+  let prevMs = -1;
 
   for (let i = 0; i < total; i++) {
     if (signal?.aborted) throw new DOMException('Analysis cancelled', 'AbortError');
-    const tMs = Math.round(i * stepMs);
+    const tMs = Math.min(Math.round(i * stepMs), endMs);
+    if (tMs <= prevMs) continue;
+    prevMs = tMs;
     if (!(await seekTo(video, tMs / 1000))) continue;
 
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);

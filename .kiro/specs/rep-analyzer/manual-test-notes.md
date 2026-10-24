@@ -2,7 +2,7 @@
 
 Last updated: 2026-10-24. Separates what was actually run from what is assumed.
 
-## Automated unit tests (`npm test`, 69 passing)
+## Automated unit tests (`npm test`, 71 passing)
 
 `src/analysis/legMachines.test.ts`: leg press landmarks from a free Pexels
 clip through the real scoring path, and synthetic seated knee-angle traces for
@@ -180,6 +180,26 @@ rep (an undercount, never a false rep).
 
 Not covered by real video: walking into or out of frame, ankle glitches and
 camera bumps. These are synthetic only.
+
+## Video that stops right at the top (user's one-squat test)
+
+`Squat_one_rep_short.MP4` (phone screen recording): one squat to 76% depth in
+a 1.8 s video that stops the moment the user is back up. The live app showed
+**0 reps**. The hips reached standing only in the last 2–3 sampled frames,
+and the 5-frame median smoothing (about 2 frames of lag) never got there
+before the video ended. The sampling also skipped the final ~60 ms of the
+video.
+
+Fix: analysis now always samples the video's last frame. After the last frame,
+if the counter is at the bottom of a rep and any of the last 3 raw samples
+reached standing (and the rep lasted at least the minimum rep time), that rep
+counts. A video that ends on the way up still does not count the rep.
+
+| Clip | Before | After |
+|---|---|---|
+| User's one-squat video (trimmed to the playback span, 1.88 s) | **0** (live site) | **1** (local build, 390×844), not flagged |
+| Same, cut where the hips are about 70% of the way back up | 0 | 0 |
+| Pexels 9001924 squats, QuickCurls_5 | 3, 5 | 3, 5 |
 
 Picked by replaying all 8 recorded squat fixtures offline:
 

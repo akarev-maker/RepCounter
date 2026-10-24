@@ -68,6 +68,8 @@ export class RepCounter {
   private lastTsMs = -Infinity;
   /** Lowest smoothed angle since the current cycle started. */
   private cycleMin = Infinity;
+  /** Last few confident raw (unsmoothed) samples, for `finish`. */
+  private lastRaw: { tsMs: number; angle: number }[] = [];
 
   constructor(config: Partial<RepCounterConfig> = {}) {
     this.cfg = { ...DEFAULT_CONFIG, ...config };
@@ -84,6 +86,37 @@ export class RepCounter {
     this.trackingLost = false;
     this.lastTsMs = -Infinity;
     this.cycleMin = Infinity;
+    this.lastRaw = [];
+  }
+
+  /**
+   * Call once after the last frame. The median smoother lags about two
+   * frames, so a video that stops the moment the user is back at the top
+   * would leave the last rep unfinished. If the last few raw samples reached
+   * the top, count that rep. A video that ends mid-rep still doesn't count it.
+   */
+  finish(): RepCounterSnapshot {
+    if (this.state === 'flexed' && this.lastRaw.length) {
+      const top = this.lastRaw.reduce((m, s) => Math.max(m, s.angle), -Infinity);
+      const tsMs = this.lastRaw[this.lastRaw.length - 1].tsMs;
+      if (top >= this.cfg.extendEnter && tsMs - this.lastExtendedMs >= (this.cfg.minRepMs ?? 0)) {
+        this.completeRep(tsMs);
+        this.state = 'extended';
+      }
+    }
+    return this.snapshot();
+  }
+
+  private completeRep(tsMs: number): void {
+    this.count += 1;
+    const bottom = Math.round(this.cycleMin);
+    this.reps.push({
+      index: this.count,
+      tsMs,
+      startMs: this.lastExtendedMs,
+      bottomAngle: bottom,
+      shallow: this.cfg.fullDepth !== undefined && bottom > this.cfg.fullDepth,
+    });
   }
 
   /**
@@ -93,6 +126,7 @@ export class RepCounter {
   rearm(): void {
     this.state = 'unknown';
     this.smoother.reset();
+    this.lastRaw = [];
   }
 
   /**
@@ -112,6 +146,7 @@ export class RepCounter {
         this.trackingLost = true;
         this.state = 'unknown';
         this.smoother.reset();
+        this.lastRaw = [];
       }
       return this.snapshot();
     }
@@ -121,6 +156,8 @@ export class RepCounter {
     this.trackingLost = false;
 
     const a = this.smoother.push(sample.angle);
+    this.lastRaw.push({ tsMs: sample.tsMs, angle: sample.angle });
+    if (this.lastRaw.length > 3) this.lastRaw.shift();
 
     if (this.state === 'unknown') {
       if (a >= this.cfg.extendEnter) {
@@ -144,15 +181,7 @@ export class RepCounter {
         this.cycleMin = a;
       } else if (a >= this.cfg.extendEnter) {
         // flexed -> back to extension completes the rep.
-        this.count += 1;
-        const bottom = Math.round(this.cycleMin);
-        this.reps.push({
-          index: this.count,
-          tsMs: sample.tsMs,
-          startMs: this.lastExtendedMs,
-          bottomAngle: bottom,
-          shallow: this.cfg.fullDepth !== undefined && bottom > this.cfg.fullDepth,
-        });
+        this.completeRep(sample.tsMs);
         this.state = 'extended';
         this.lastExtendedMs = sample.tsMs;
         this.cycleMin = a;
