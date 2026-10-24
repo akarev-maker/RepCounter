@@ -21,6 +21,24 @@ export const LM = {
 
 export type Joint = 'elbow' | 'knee';
 
+/** Wording for exercises that count partial reps but flag them. */
+export interface DepthWording {
+  /** Format a rep's bottom value (as recorded by the counter), e.g. "45%" or "118°". */
+  format: (bottom: number) => string;
+  /** Appended after `format` in sentences, e.g. " depth" -> "45% depth". */
+  suffix: string;
+  /** Target phrase, e.g. "45% depth or more". */
+  target: string;
+  /** One sentence explaining the scale. */
+  explain: string;
+  /** Note on a full rep, e.g. "Good depth". */
+  good: string;
+  /** What a full rep reaches, e.g. "full depth". */
+  full: string;
+  /** Advice on a partial rep, e.g. "go deeper". */
+  cue: string;
+}
+
 export interface ExerciseDef {
   id: string;
   label: string;
@@ -63,7 +81,8 @@ export interface ExerciseDef {
   measure: 'angle' | 'hipHeight';
   /**
    * For movements that rest bent (leg extension), a rep is bent -> straight
-   * -> bent, and counts when the joint bends back to `flexEnter`. Thresholds
+   * -> bent, and counts when the joint bends back to `flexEnter`. Reps that
+   * straighten past `extendEnter` but not `fullDepth` are flagged. Thresholds
    * stay in real joint angles; the scorer flips them (180 - x) for the counter.
    */
   startsBent?: boolean;
@@ -77,14 +96,7 @@ export interface ExerciseDef {
   /** Optional shortest rep in ms; quicker dips (e.g. walking) are ignored. */
   minRepMs?: number;
   /** How depth is shown to the user, for exercises with `fullDepth`. */
-  depth?: {
-    /** Format a rep's bottom value, e.g. "45%". */
-    format: (bottom: number) => string;
-    /** Target phrase, e.g. "50% depth or more". */
-    target: string;
-    /** One sentence explaining the scale. */
-    explain: string;
-  };
+  depth?: DepthWording;
   /** Angle at or above this = movement is in the extended (top) position. */
   extendEnter: number;
   /** Short hint shown in the UI about how to film. */
@@ -159,8 +171,12 @@ export const EXERCISES: Record<string, ExerciseDef> = {
     extendEnter: 95,
     depth: {
       format: (bottom) => `${Math.max(0, Math.round(100 - bottom))}%`,
+      suffix: ' depth',
       target: '45% depth or more',
       explain: '100% means your hips came down level with your knees.',
+      good: 'Good depth',
+      full: 'full depth',
+      cue: 'go deeper',
     },
     filmingHint: 'Counts each squat from how far your hips drop, and flags reps that could go deeper. Keep your whole body in frame, from the side or the front.',
     defaults: { repRangeMin: 8, repRangeMax: 12, increment: 10, unit: 'lb' },
@@ -191,10 +207,22 @@ export const EXERCISES: Record<string, ExerciseDef> = {
       left: [LM.LEFT_HIP, LM.LEFT_KNEE, LM.LEFT_ANKLE],
       right: [LM.RIGHT_HIP, LM.RIGHT_KNEE, LM.RIGHT_ANKLE],
     },
-    flexEnter: 110,
+    // Counts from 125 deg so short-range presses still count; above 100 deg
+    // they are flagged "go deeper". The clip's full presses reached 70-90 deg.
+    flexEnter: 125,
+    fullDepth: 100,
     minRepMs: 600,
     extendEnter: 145,
-    filmingHint: 'Counts a rep each time your knees bend to 110\u00b0 or less and straighten back to 145\u00b0 or more. Film from the side.',
+    depth: {
+      format: (bottom) => `${Math.round(bottom)}\u00b0`,
+      suffix: '',
+      target: '100\u00b0 or less at the knee',
+      explain: 'A smaller knee angle means a deeper press.',
+      good: 'Good depth',
+      full: 'full depth',
+      cue: 'go deeper',
+    },
+    filmingHint: 'Counts each press and flags ones that could go deeper. Film from the side with hip, knee and ankle in frame.',
     defaults: { repRangeMin: 8, repRangeMax: 12, increment: 10, unit: 'lb' },
   },
   /**
@@ -223,11 +251,23 @@ export const EXERCISES: Record<string, ExerciseDef> = {
       left: [LM.LEFT_HIP, LM.LEFT_KNEE, LM.LEFT_ANKLE],
       right: [LM.RIGHT_HIP, LM.RIGHT_KNEE, LM.RIGHT_ANKLE],
     },
-    // Rest (bent) at 115 deg or less; a rep must straighten to 145 deg or more.
+    // Rest (bent) at 115 deg or less. A lift to 135 deg counts; below 155 deg
+    // it is flagged "straighten more".
     flexEnter: 115,
+    fullDepth: 155,
     minRepMs: 600,
-    extendEnter: 145,
-    filmingHint: 'Counts a rep each time your legs straighten to 145\u00b0 or more and lower back to 115\u00b0 or less. Film from the side.',
+    extendEnter: 135,
+    depth: {
+      // The counter records the flipped value (180 - knee angle).
+      format: (bottom) => `${Math.round(180 - bottom)}\u00b0`,
+      suffix: '',
+      target: '155\u00b0 or more at the knee',
+      explain: '180\u00b0 means your legs are fully straight.',
+      good: 'Full extension',
+      full: 'full extension',
+      cue: 'straighten more',
+    },
+    filmingHint: 'Counts each lift and flags ones that could straighten more. Film from the side with hip, knee and ankle in frame.',
     defaults: { repRangeMin: 8, repRangeMax: 12, increment: 5, unit: 'lb' },
   },
 };

@@ -60,6 +60,19 @@ describe('leg press on a real clip (recorded pose output)', () => {
       expect(r.reps[i].tsMs / 1000).toBeGreaterThan(bottom);
     });
     expect(r.trackedFraction).toBeGreaterThan(0.9);
+    // Every press on the clip bent past 90 deg, so none are flagged.
+    expect(r.reps.every((x) => !x.shallow)).toBe(true);
+  });
+
+  it('a short press to 115 deg still counts, flagged "go deeper"', () => {
+    const lp = EXERCISES['leg-press'];
+    const frames = [
+      [0, 165], [1, 165], [2, 115], [2.4, 115], [3.4, 165], [4.4, 85], [4.8, 85], [5.8, 165], [6.8, 165],
+    ] as [number, number][];
+    const r = scoreFrames(trace(frames), lp, null, 1);
+    expect(r.count).toBe(2);
+    expect(r.reps.map((x) => x.shallow)).toEqual([true, false]);
+    expect(lp.depth!.format(r.reps[0].bottomAngle)).toBe('115\u00b0');
   });
 });
 
@@ -87,11 +100,28 @@ describe('leg extension (synthetic: no real clip tested yet)', () => {
     expect(r.frames[5].label).toBe('90\u00b0');
   });
 
-  it('partial lifts that never straighten to 145 deg do not count', () => {
+  it('full lifts are not flagged', () => {
+    const r = run([[0, 90], [1, 90], [2, 165], [2.4, 165], [3.4, 90], [4.4, 90]]);
+    expect(r.reps.map((x) => x.shallow)).toEqual([false]);
+    expect(ext.depth!.format(r.reps[0].bottomAngle)).toBe('165\u00b0');
+  });
+
+  it('a lift to 145 deg still counts, flagged "straighten more" with its top angle', () => {
     const r = run([
       [0, 90], [1, 90],
-      [2, 135], [3, 90],
-      [4, 135], [5, 90],
+      [2, 145], [2.4, 145], [3.4, 90],
+      [4.4, 165], [4.8, 165], [5.8, 90], [6.8, 90],
+    ]);
+    expect(r.count).toBe(2);
+    expect(r.reps.map((x) => x.shallow)).toEqual([true, false]);
+    expect(ext.depth!.format(r.reps[0].bottomAngle)).toBe('145\u00b0');
+  });
+
+  it('small lifts that never reach 135 deg do not count', () => {
+    const r = run([
+      [0, 90], [1, 90],
+      [2, 125], [3, 90],
+      [4, 125], [5, 90],
     ]);
     expect(r.count).toBe(0);
   });

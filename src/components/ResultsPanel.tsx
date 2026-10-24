@@ -1,6 +1,7 @@
 import type { Effort, ProgressionSettings, RepEvent, Side, Unit } from '../types';
 import type { OtherSideHint } from '../analysis/scoreFrames';
 import { armBalance } from '../counting/balance';
+import type { DepthWording } from '../exercises/registry';
 import { armColor } from '../analysis/drawOverlay';
 import { formatTime } from './formatTime';
 import { IconCheck, IconMinus, IconPlus } from './icons';
@@ -30,8 +31,8 @@ interface Props {
   arms: ArmResultView[];
   /** Body part being tracked, for wording ("arm", "leg"). */
   limb: 'arm' | 'leg';
-  /** Depth wording for exercises that flag shallow reps (squats). */
-  depth?: { format: (bottom: number) => string; target: string; explain: string };
+  /** Depth wording for exercises that flag partial reps. */
+  depth?: DepthWording;
   weightNote: string;
   allowBodyweight: boolean;
   settings: ProgressionSettings;
@@ -162,18 +163,19 @@ export function ResultsPanel(p: Props) {
           >
             {shallowReps.length === 0 ? (
               <>
-                <span className="font-semibold">Good depth on every rep.</span> Each one reached {p.depth.target}.{' '}
+                <span className="font-semibold">{p.depth.good} on every rep.</span> Each one reached {p.depth.target}.{' '}
                 {p.depth.explain}
               </>
             ) : (
               <>
                 <span className="font-semibold">
                   {shallowReps.length === allReps.length
-                    ? 'All reps counted, but none reached full depth.'
-                    : `${shallowReps.length} of ${allReps.length} reps could go deeper.`}
+                    ? `All reps counted, but none reached ${p.depth.full}.`
+                    : `${shallowReps.length} of ${allReps.length} reps could ${p.depth.cue}.`}
                 </span>{' '}
                 {shallowReps.length === 1 ? 'Rep' : 'Reps'} {joinList(shallowReps.map((r) => String(r.index)))} reached{' '}
-                {joinList(shallowReps.map((r) => p.depth!.format(r.bottomAngle)))} depth. They still count. Aim for{' '}
+                {joinList(shallowReps.map((r) => p.depth!.format(r.bottomAngle)))}
+                {p.depth.suffix}. They still count. Aim for{' '}
                 {p.depth.target}. {p.depth.explain}
               </>
             )}
@@ -194,7 +196,7 @@ export function ResultsPanel(p: Props) {
                         type="button"
                         onClick={() => p.onSeek(r.startMs)}
                         title={`${multi ? `${sideLabel(arm.side)} rep` : 'Rep'} ${r.index}: ${formatTime(r.startMs)} to ${formatTime(r.tsMs)}${
-                          p.depth ? `, ${p.depth.format(r.bottomAngle)} depth${r.shallow ? ' (could go deeper)' : ''}` : ''
+                          p.depth ? `, ${p.depth.format(r.bottomAngle)}${p.depth.suffix}${r.shallow ? ` (could ${p.depth.cue})` : ''}` : ''
                         }`}
                         className="group inline-flex h-8 items-center gap-1.5 rounded-lg bg-canvas pl-1.5 pr-2.5 text-[13px] font-medium text-ink-2 transition hover:bg-ink hover:text-white"
                       >

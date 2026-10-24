@@ -128,7 +128,7 @@ export function HistoryView({ sessions, onDelete, onClear, onStart }: Props) {
                     )}
                     {!!s.shallowReps && (
                       <span className="ml-2 rounded-md bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800">
-                        {s.shallowReps} shallow
+                        {s.shallowReps} partial
                       </span>
                     )}
                     {s.perArm && s.perArm.left !== s.perArm.right && (

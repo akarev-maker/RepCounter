@@ -30,7 +30,7 @@ export function createScorer(exercise: ExerciseDef, side: Side | null, aspect: n
   const flip = !!exercise.startsBent;
   const counter = new RepCounter({
     flexEnter: flip ? 180 - exercise.extendEnter : exercise.flexEnter,
-    fullDepth: exercise.fullDepth,
+    fullDepth: flip && exercise.fullDepth !== undefined ? 180 - exercise.fullDepth : exercise.fullDepth,
     minRepMs: exercise.minRepMs,
     extendEnter: flip ? 180 - exercise.flexEnter : exercise.extendEnter,
     minVisibility: MIN_VISIBILITY,

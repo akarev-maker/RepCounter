@@ -34,10 +34,13 @@ secure page: `localhost`, or the site served over https.
      counts at 20% depth and once you stand back up; reps that never reach
      45% still count but are marked "go deeper". Both legs are averaged when
      both are clearly visible; otherwise the more visible leg is used.
-   - Leg press: knee angle from the side, bent ≤ 110°, straight ≥ 145°.
+   - Leg press: knee angle from the side. A rep counts from a bend to 125°
+     and back up to 145°; presses that never reach 100° still count but are
+     marked "go deeper".
    - Leg extension: knee angle from the side. It starts bent, so a rep is
-     bent (≤ 115°), straight (≥ 145°), and back to bent. Not yet tested on
-     real video.
+     bent (≤ 115°), straight (≥ 135°), and back to bent; lifts that never
+     reach 155° still count but are marked "straighten more". Not yet tested
+     on real video.
 3. Each rep gets a timestamp you can click to jump to it in the video.
 4. The next-set target uses double progression: add reps within your range, and
    add weight only after hitting the top of the range on two sets in a row.

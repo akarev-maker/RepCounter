@@ -386,8 +386,8 @@ export default function App() {
           !exercise.depth
             ? undefined
             : r.shallow
-              ? { text: `Counted · go deeper (${exercise.depth.format(r.bottomAngle)})`, tone: 'warn' as const }
-              : { text: `Good depth · ${exercise.depth.format(r.bottomAngle)}`, tone: 'good' as const },
+              ? { text: `Counted · ${exercise.depth.cue} (${exercise.depth.format(r.bottomAngle)})`, tone: 'warn' as const }
+              : { text: `${exercise.depth.good} · ${exercise.depth.format(r.bottomAngle)}`, tone: 'good' as const },
       })),
     ) ?? [];
   const armViews: ArmResultView[] =
