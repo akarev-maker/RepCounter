@@ -1,7 +1,7 @@
 import type { AnalyzedFrame, PoseFrame, RepEvent, Side } from '../types';
 import { RepCounter } from '../counting/repCounter';
 import { jointAngle, minVisibility, type Pt } from '../pose/landmarks';
-import { LM, tripletFor, type ExerciseDef } from '../exercises/registry';
+import { tripletFor, type ExerciseDef } from '../exercises/registry';
 
 export const MIN_VISIBILITY = 0.6;
 
@@ -25,33 +25,16 @@ export function createScorer(exercise: ExerciseDef, side: Side | null, aspect: n
   const triplets = exercise.sided
     ? [tripletFor(exercise, side)]
     : [exercise.landmarks.left, exercise.landmarks.right];
-  // The counter expects reps to start and end at a high value. For movements
-  // that rest bent, feed it 180 - angle so "bent" becomes the high end.
-  const flip = !!exercise.startsBent;
   const counter = new RepCounter({
-    flexEnter: flip ? 180 - exercise.extendEnter : exercise.flexEnter,
-    fullDepth: flip && exercise.fullDepth !== undefined ? 180 - exercise.fullDepth : exercise.fullDepth,
+    flexEnter: exercise.flexEnter,
+    fullDepth: exercise.fullDepth,
     minRepMs: exercise.minRepMs,
-    extendEnter: flip ? 180 - exercise.flexEnter : exercise.extendEnter,
+    extendEnter: exercise.extendEnter,
     minVisibility: MIN_VISIBILITY,
   });
 
   // Standing-height reference per limb, for 'hipDrop'.
   const standing = triplets.map(() => new StandingHeight());
-
-  /** Seated machines: true when a clearly visible hip is open past seatedHipMax (standing or walking). */
-  const offSeat = (pf: PoseFrame): boolean => {
-    const max = exercise.seatedHipMax;
-    if (max === undefined || !pf.lms) return false;
-    return triplets.some(([iHip, iKnee]) => {
-      const iShoulder = iHip === LM.LEFT_HIP ? LM.LEFT_SHOULDER : LM.RIGHT_SHOULDER;
-      const s = pf.lms![iShoulder];
-      const h = pf.lms![iHip];
-      const k = pf.lms![iKnee];
-      if (!s || !h || !k || minVisibility([s, h, k]) < MIN_VISIBILITY) return false;
-      return jointAngle(s, h, k, aspect) > max;
-    });
-  };
 
   const measure = (pf: PoseFrame, [iA, iB, iC]: [number, number, number], limb: number) => {
     const a = pf.lms?.[iA];
@@ -82,10 +65,7 @@ export function createScorer(exercise: ExerciseDef, side: Side | null, aspect: n
     const value =
       good.length > 1 ? good.reduce((sum, m) => sum + m.value!, 0) / good.length : (best?.value ?? null);
     const vis = best?.vis ?? 0;
-    const fed = value !== null && flip ? 180 - value : value;
-    // Standing up from a machine seat or walking up to it is never a rep.
-    if (offSeat(pf)) counter.rearm();
-    const snap = offSeat(pf) ? counter.snapshot() : counter.push({ tsMs: pf.tMs, angle: fed, minVisibility: vis });
+    const snap = counter.push({ tsMs: pf.tMs, angle: value, minVisibility: vis });
     let label: string | null = null;
     if (value !== null) {
       label = exercise.measure === 'hipDrop' && exercise.depth

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { SessionSummary } from '../types';
 import { EFFORTS } from './ResultsPanel';
-import { getExercise } from '../exercises/registry';
+import { EXERCISES } from '../exercises/registry';
 import { formatLoad } from '../progression/progression';
 import { IconTrash } from './icons';
 import { Button, Card, SectionLabel } from './ui';
@@ -140,7 +140,7 @@ export function HistoryView({ sessions, onDelete, onClear, onStart }: Props) {
                   <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[13px] text-ink-2">
                     <span className="tabular-nums">
                       {formatLoad(s.weight, s.unit)}
-                      {s.weight === 0 ? '' : getExercise(s.exerciseId).loadSuffix}
+                      {s.weight === 0 ? '' : (EXERCISES[s.exerciseId]?.loadSuffix ?? '')}
                     </span>
                     <span className="inline-flex items-center gap-1.5">
                       <span className={`h-1.5 w-1.5 rounded-full ${EFFORT_DOT[s.effort] ?? 'bg-ink-3'}`} />

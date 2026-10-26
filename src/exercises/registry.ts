@@ -45,8 +45,6 @@ export interface ExerciseDef {
   joint: Joint;
   /** Body part named in the UI ("arm", "leg"). */
   limb: 'arm' | 'leg';
-  /** Not yet reliable on real video; labelled "Beta" in the UI. */
-  beta?: boolean;
   /**
    * Whether the user picks a side (left/right). Exercises that are not sided
    * use both sides of the body together: each frame is measured on the more
@@ -80,20 +78,6 @@ export interface ExerciseDef {
    *   decide when a change of camera distance can reset that reference.
    */
   measure: 'angle' | 'hipDrop';
-  /**
-   * For movements that rest bent (leg extension), a rep is bent -> straight
-   * -> bent, and counts when the joint bends back to `flexEnter`. Reps that
-   * straighten past `extendEnter` but not `fullDepth` are flagged. Thresholds
-   * stay in real joint angles; the scorer flips them (180 - x) for the counter.
-   */
-  startsBent?: boolean;
-  /**
-   * Seated machines: largest shoulder-hip-knee angle that still counts as
-   * sitting on the machine. Above it (standing up, walking off) frames are
-   * not counted and any rep in progress is dropped, so standing up from the
-   * seat is never counted as a rep. Ignored when the shoulders aren't visible.
-   */
-  seatedHipMax?: number;
   /** Value at or below this = bottom position reached; the rep counts. */
   flexEnter: number;
   /**
@@ -192,103 +176,6 @@ export const EXERCISES: Record<string, ExerciseDef> = {
     },
     filmingHint: 'Counts each squat from how far your hips drop, and flags reps that could go deeper. Keep your whole body in frame, from the side or the front.',
     defaults: { repRangeMin: 8, repRangeMax: 12, increment: 10, unit: 'lb' },
-  },
-  /**
-   * Knee angle, filmed from the side. Starts with the legs straight, bends,
-   * and counts when the legs straighten again. On a free Pexels clip
-   * (reclined machine, side view) the bottoms read 70-90 deg and the tops
-   * 145-179 deg, with some reps pausing at 145-150 on the way up.
-   */
-  'leg-press': {
-    id: 'leg-press',
-    label: 'Leg Press',
-    joint: 'knee',
-    limb: 'leg',
-    // The user's own gym clip failed: phone low and close, the sled hid the legs.
-    beta: true,
-    sided: false,
-    measure: 'angle',
-    weightNote: 'total on the machine',
-    loadSuffix: '',
-    allowBodyweight: false,
-    framingAdvice: 'Tracking needs your hip, knee and ankle in frame from the side, with the phone held still.',
-    filmingTips: [
-      { t: 'Film from the side', d: 'Set the phone square to the machine so your knee bend is seen side-on.' },
-      { t: 'Shoulders to ankles in frame', d: 'Step the phone back far enough that your shoulder, hip, knee and ankle stay visible. Shoulders let it ignore you standing up.' },
-      { t: 'Steady phone', d: 'Prop it on the floor or a bench. The near leg is the one that gets tracked.' },
-    ],
-    landmarks: {
-      left: [LM.LEFT_HIP, LM.LEFT_KNEE, LM.LEFT_ANKLE],
-      right: [LM.RIGHT_HIP, LM.RIGHT_KNEE, LM.RIGHT_ANKLE],
-    },
-    // Counts from 125 deg so short-range presses still count; above 100 deg
-    // they are flagged "go deeper". The clip's full presses reached 70-90 deg.
-    // Reclined: the real clip's hip angle stayed at 43-89 deg. Standing is about 175.
-    seatedHipMax: 135,
-    flexEnter: 125,
-    fullDepth: 100,
-    minRepMs: 600,
-    extendEnter: 145,
-    depth: {
-      format: (bottom) => `${Math.round(bottom)}\u00b0`,
-      suffix: '',
-      target: '100\u00b0 or less at the knee',
-      explain: 'A smaller knee angle means a deeper press.',
-      good: 'Good depth',
-      full: 'full depth',
-      cue: 'go deeper',
-    },
-    filmingHint: 'Counts each press and flags ones that could go deeper. Film from the side with hip, knee and ankle in frame.',
-    defaults: { repRangeMin: 8, repRangeMax: 12, increment: 10, unit: 'lb' },
-  },
-  /**
-   * Knee angle, filmed from the side, starting bent (seated). Not yet tested
-   * on real video; thresholds are an estimate (seated start is usually about
-   * 80-100 deg, the top 150-175 deg).
-   */
-  'leg-extension': {
-    id: 'leg-extension',
-    label: 'Leg Extension',
-    joint: 'knee',
-    limb: 'leg',
-    // Never tested on real video.
-    beta: true,
-    sided: false,
-    measure: 'angle',
-    startsBent: true,
-    weightNote: 'machine weight',
-    loadSuffix: '',
-    allowBodyweight: false,
-    framingAdvice: 'Tracking needs your hip, knee and ankle in frame from the side, with the phone held still.',
-    filmingTips: [
-      { t: 'Film from the side', d: 'Set the phone square to the machine so your knee bend is seen side-on.' },
-      { t: 'Shoulders to ankles in frame', d: 'Keep shoulder, hip, knee and ankle visible with your legs bent and straight. Shoulders let it ignore you standing up.' },
-      { t: 'Steady phone', d: 'Prop it on the floor or a bench, a couple of steps away. The near leg is the one that gets tracked.' },
-    ],
-    landmarks: {
-      left: [LM.LEFT_HIP, LM.LEFT_KNEE, LM.LEFT_ANKLE],
-      right: [LM.RIGHT_HIP, LM.RIGHT_KNEE, LM.RIGHT_ANKLE],
-    },
-    // Upright seat: hip angle about 90-120 deg. Standing is about 175.
-    seatedHipMax: 135,
-    // Rest (bent) at 115 deg or less. A lift to 135 deg counts; below 155 deg
-    // it is flagged "straighten more".
-    flexEnter: 115,
-    fullDepth: 155,
-    minRepMs: 600,
-    extendEnter: 135,
-    depth: {
-      // The counter records the flipped value (180 - knee angle).
-      format: (bottom) => `${Math.round(180 - bottom)}\u00b0`,
-      suffix: '',
-      target: '155\u00b0 or more at the knee',
-      explain: '180\u00b0 means your legs are fully straight.',
-      good: 'Full extension',
-      full: 'full extension',
-      cue: 'straighten more',
-    },
-    filmingHint: 'Counts each lift and flags ones that could straighten more. Film from the side with hip, knee and ankle in frame.',
-    defaults: { repRangeMin: 8, repRangeMax: 12, increment: 5, unit: 'lb' },
   },
 };
 

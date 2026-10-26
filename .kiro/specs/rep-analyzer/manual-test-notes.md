@@ -1,12 +1,8 @@
 # Test Notes — RepCounter
 
-Last updated: 2026-10-24. Separates what was actually run from what is assumed.
+Last updated: 2026-10-26. Separates what was actually run from what is assumed.
 
-## Automated unit tests (`npm test`, 92 passing)
-
-`src/analysis/legMachines.test.ts`: leg press landmarks from a free Pexels
-clip through the real scoring path, and synthetic seated knee-angle traces for
-leg extension (no real leg extension clip has been tested).
+## Automated unit tests (`npm test`, 78 passing)
 
 Includes recorded angle sequences from six real clips: the Pexels clip (4 reps,
 left arm), the user's first iPhone clip (6 reps, right arm), and the user's four
@@ -240,41 +236,18 @@ phone test's rep 1 reads 64, close to the line).
 Not verified: the original (non-screen-recorded) clips, a side view filmed
 by the user, and whether 70% is the right "good depth" line for most people.
 
-## Leg press and leg extension (knee angle, side view)
+## Leg press and leg extension (removed 2026-10-26)
 
-Both machines use the same leniency as squats: partial reps count and are
-flagged, with the measured angle.
+Both were added as beta exercises using the knee angle from the side, and
+removed because there was no data to make them reliable:
+- Leg press counted a free Pexels side-view clip correctly (5 of the 6
+  presses; the first had no visible start). On the user's own gym clip it
+  failed. The knee read 30–90° for the whole set and the hip and ankle points
+  landed on the hands, because the phone was low and close and the sled hid
+  the legs. The full and heavy pose models did not fix it.
+- Leg extension was never tested on real video; only synthetic traces.
 
-Leg press: a rep counts from a bend to 125° and back to 145°, minimum rep
-0.6 s. Presses whose deepest bend stays above 100° are flagged "go deeper".
-Leg extension rests bent, so its angle is flipped before counting: a rep is
-≤ 115°, then ≥ 135°, then back to ≤ 115°, and it is logged when the legs come
-back down. Lifts that never reach 155° are flagged "straighten more".
-
-| Clip | True count | Detected | Notes |
-|---|---|---|---|
-| Pexels 32239225 leg press (25.1 s, 4K, reclined, side view; scaled to 1280 wide) | 6 presses, the first already under way when the clip starts | **5**, none flagged | Reps at 0:04.1, 0:08.6, 0:12.8, 0:17.3, 0:22.0. Bottoms 70–90°, tops 145–179°. The first press has no visible start, so it is not counted (same rule as all exercises). Legs visible in 100% of frames. Same at 390×844 mobile; overlay sits on the near leg. Replay unchanged. |
-| Leg extension | — | — | **No free clip found.** Only synthetic traces were tested: 3 full reps = 3, not flagged; a lift to 145° counts and is flagged; lifts to 125° = 0; a clip starting straight does not count the first lowering. |
-
-A synthetic leg press with a press to 115° counts it and flags it "go
-deeper". After this change the shallow-squat clip (Pexels 8435486) still
-counts 3 in the browser with only rep 1 flagged.
-
-Getting on and off the machine (`src/analysis/legMachineSetup.test.ts`,
-synthetic side-view poses of a whole set: walk up, sit, set, stand up, walk
-off). Walking, sitting down and leg extension stand-ups already counted
-correctly. One leg press case failed: bringing the feet down off the platform
-and standing up looks exactly like one more press (knee bends then
-straightens), so it counted **4 instead of 3**. Fix: for both machines, a
-frame where the shoulder-hip-knee angle is over 135° (standing; the real leg
-press clip stays at 43–89°, a seated extension at about 90–120°) is not
-counted and drops any rep in progress. This needs the shoulders in frame.
-Without them the stand-up is not caught, and that test documents the extra
-rep. Real leg press clip after the change: still 5.
-
-The 145° top for leg press was chosen because some presses on the clip
-pause at 145–150° on the way up. A heavier set with a shorter range, or a
-machine that hides the hip or ankle, has not been tested.
+Sessions saved for them stay in History with their original name.
 
 ## In-browser recording (headless Chrome, fake camera)
 
