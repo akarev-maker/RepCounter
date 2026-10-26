@@ -71,3 +71,23 @@ Requires Node 22.12+ (or 20.19+). Pushing to `main` runs the tests and deploys t
 
 See [`.kiro/specs/rep-analyzer/manual-test-notes.md`](.kiro/specs/rep-analyzer/manual-test-notes.md)
 for what has been verified on real video and what is still an assumption.
+
+### Dataset eval
+
+`npm run eval` checks counting against labelled clips from
+[RepCount-A](https://huggingface.co/datasets/lmms-lab-eval/repcounta-lance)
+(real videos with hand-counted reps). It runs the app's own pose pass on each
+clip in headless Chrome, caches the landmarks, counts with the app's scoring
+code, and prints true vs counted reps per clip.
+
+```sh
+scripts/eval/fetch-repcount.sh       # test split, 1.5 GB (RC_SPLITS="test validation" for more)
+python3 -m venv test-videos/.venv && test-videos/.venv/bin/pip install pylance
+test-videos/.venv/bin/python scripts/eval/extract-repcount.py test validation
+npm run eval                         # first run extracts poses (about 1 min per clip per worker)
+npm run eval -- --rescore            # re-count from cached poses in seconds
+```
+
+RepCount-A is for research use only. The videos, poses and results stay in
+the gitignored `test-videos/datasets/` and are never committed. Needs Chrome
+at the macOS default path (or set `CHROME`) and ffprobe.

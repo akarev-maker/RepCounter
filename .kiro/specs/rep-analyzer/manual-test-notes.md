@@ -249,6 +249,37 @@ removed because there was no data to make them reliable:
 
 Sessions saved for them stay in History with their original name.
 
+## Dataset eval: RepCount-A squats (`npm run eval`, 2026-10-26)
+
+34 squat clips from the RepCount-A test and validation splits (real videos
+with hand-counted reps, mostly YouTube and students filming at home or in the
+gym). Run through the app's own pose pass and scoring, with no tuning to
+this data.
+
+| Result | Clips |
+|---|---|
+| Exact count | 15 of 34 |
+| Off by at most 1 | 24 of 34 |
+| Reps counted | 342 of 389 (undercounted 16 clips, overcounted 3) |
+| Mean error | 1.56 reps per clip |
+
+The misses fall into a few groups:
+- **Lifter not tracked** (0 counted, tracking lost): a person tiny in a busy
+  gym filmed from far away, a close-up that cuts off the legs, and a barbell
+  squat in a rack where the bar and plates hide the body at the bottom.
+  The app already warns about these.
+- **Not standing up between reps** (−8 and −9): near the end of two long
+  sets the person stops standing fully at the top, so the hip drop never
+  goes back above 92% (tops at 20–30% drop). Those reps are not counted.
+- **Fast, shallow pulse squats** (−10 on one clip): about 1.1 s per rep with
+  a 15–24% hip drop. The 5-frame smoothing keeps them just under the 15% line.
+- **Off by one**: usually the first rep starting before the clip does, or one
+  extra shallow dip counted (flagged "go deeper").
+
+The InfiniteRep dataset was also tried and dropped: the public mirror
+(FatimahEmadEldin/infiniterep-physiotherapy) has only segmentation masks,
+with no real video frames and no rep counts.
+
 ## In-browser recording (headless Chrome, fake camera)
 
 Chrome was given a fake webcam that plays the Pexels 9001924 squat clip
