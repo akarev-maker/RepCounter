@@ -4,6 +4,12 @@ import { jointAngle, minVisibility, type Pt } from '../pose/landmarks';
 import { tripletFor, type ExerciseDef } from '../exercises/registry';
 
 export const MIN_VISIBILITY = 0.6;
+/**
+ * Low-confidence frames in a row (at 15 fps, about 0.67 s) before a rep in
+ * progress is dropped. On RepCount-A pull-ups, 10 instead of 5 found 161 of
+ * 162 test reps instead of 152, with squats and raises unchanged.
+ */
+export const LOST_FRAMES = 10;
 
 export interface ScoredResult {
   frames: AnalyzedFrame[];
@@ -25,12 +31,17 @@ export function createScorer(exercise: ExerciseDef, side: Side | null, aspect: n
   const triplets = exercise.sided
     ? [tripletFor(exercise, side)]
     : [exercise.landmarks.left, exercise.landmarks.right];
+  // The counter expects reps to start and end at a high value. For movements
+  // that rest at a small angle (raises), feed it 180 - angle so rest is the
+  // high end. Thresholds in the registry stay in real angles.
+  const flip = !!exercise.restsLow;
   const counter = new RepCounter({
-    flexEnter: exercise.flexEnter,
-    fullDepth: exercise.fullDepth,
+    flexEnter: flip ? 180 - exercise.flexEnter : exercise.flexEnter,
+    fullDepth: flip && exercise.fullDepth !== undefined ? 180 - exercise.fullDepth : exercise.fullDepth,
     minRepMs: exercise.minRepMs,
-    extendEnter: exercise.extendEnter,
+    extendEnter: flip ? 180 - exercise.extendEnter : exercise.extendEnter,
     minVisibility: MIN_VISIBILITY,
+    lostFramesThreshold: LOST_FRAMES,
   });
 
   // Standing-height reference per limb, for 'hipDrop'.
@@ -65,7 +76,8 @@ export function createScorer(exercise: ExerciseDef, side: Side | null, aspect: n
     const value =
       good.length > 1 ? good.reduce((sum, m) => sum + m.value!, 0) / good.length : (best?.value ?? null);
     const vis = best?.vis ?? 0;
-    const snap = counter.push({ tsMs: pf.tMs, angle: value, minVisibility: vis });
+    const fed = value !== null && flip ? 180 - value : value;
+    const snap = counter.push({ tsMs: pf.tMs, angle: fed, minVisibility: vis });
     let label: string | null = null;
     if (value !== null) {
       label = exercise.measure === 'hipDrop' && exercise.depth

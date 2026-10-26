@@ -40,6 +40,10 @@ secure page: `localhost`, or the site served over https.
      Stepping back from the phone after starting a recording does not count
      as a rep: once you stand still at the new distance, that becomes the
      new standing height.
+   - Lateral raise: shoulder angle (hip–shoulder–elbow), one arm at a time
+     or both. A rep is arm down (≤ 35°), raised (≥ 60°), and back down.
+   - Pull-up and lat pulldown: elbow angle with both arms, straight
+     (≥ 140°), bent (≤ 90°), and back to straight.
 3. Each rep gets a timestamp you can click to jump to it in the video.
 4. The next-set target uses double progression: add reps within your range, and
    add weight only after hitting the top of the range on two sets in a row.
@@ -48,13 +52,19 @@ secure page: `localhost`, or the site served over https.
 
 ## Supported
 
-- Exercises: dumbbell curl (one arm, or both arms together or alternating),
-  squat (bodyweight or loaded).
+- Exercises: dumbbell curl and lateral raise (one arm, or both arms
+  together or alternating), squat (bodyweight or loaded), pull-up and lat
+  pulldown. Raise and pull-up thresholds were tuned on RepCount-A clips (see
+  Dataset eval); lat pulldown uses the pull-up settings and has not been
+  tested on pulldown video. Bench press was tried and left out: it counted
+  well from the side but badly in crowded or head-on clips.
 - Video: anything the browser can decode. iPhone `.mov` (HEVC) works in Chrome
   and Safari on macOS; Firefox can't decode HEVC.
 - Filming: phone held still. Curls need the shoulder and torso in frame, and
   front-facing is best for both-arm sets. Squats need hips, knees and ankles
-  in frame; side, three-quarter and front views all work.
+  in frame; side, three-quarter and front views all work. Lateral raises:
+  film from the front. Pull-ups and pulldowns: from the front or behind,
+  with the bar in frame.
 
 ## Run it
 

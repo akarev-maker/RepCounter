@@ -2,7 +2,11 @@
 
 Last updated: 2026-10-26. Separates what was actually run from what is assumed.
 
-## Automated unit tests (`npm test`, 78 passing)
+## Automated unit tests (`npm test`, 86 passing)
+
+`src/analysis/armExercises.test.ts`: synthetic poses for the lateral raise
+(counts only the working arm, ignores lifts to 45°, shows the real shoulder
+angle) and the pull-up (half reps above 110° don't count).
 
 Includes recorded angle sequences from six real clips: the Pexels clip (4 reps,
 left arm), the user's first iPhone clip (6 reps, right arm), and the user's four
@@ -279,6 +283,41 @@ The misses fall into a few groups:
 The InfiniteRep dataset was also tried and dropped: the public mirror
 (FatimahEmadEldin/infiniterep-physiotherapy) has only segmentation masks,
 with no real video frames and no rep counts.
+
+### New exercises and tuning (2026-10-26)
+
+Thresholds were picked on the validation split and checked on the test
+split, from cached poses (`npm run eval -- --rescore`). Totals are both
+splits:
+
+| Exercise | Clips | Exact | Off by ≤ 1 | Reps counted |
+|---|---|---|---|---|
+| Squat (standing line 92 → 90) | 34 | 20 (was 15) | 25 (was 24) | 348 of 389 |
+| Pull-up (elbow ≤ 90° then ≥ 140°) | 26 | 13 | 19 | 308 of 324 |
+| Lateral raise (shoulder ≥ 60° then ≤ 35°), scored on front raises | 29 | 13 | 20 | 139 of 182 |
+
+- A rep in progress now survives up to 10 low-confidence frames (0.67 s)
+  instead of 5. Pull-up test split: 161 of 162 reps instead of 152; squats
+  and raises unchanged. Unit tests and all recorded fixtures still pass.
+- RepCount-A has front raises only. The lateral raise uses the same
+  shoulder angle; each clip is scored on the arm with more reps, since the
+  clips are mostly both arms together. Misses: clips filmed from the side
+  where the arm hides the body, and raises that stop below 60°.
+- Pull-up misses: swinging (kipping) reps where tracking jumps, and extra
+  counts from moving around before or after the set. A check that ignores
+  frames with the arms hanging down only improved exact counts from 13 to
+  14, so it was not kept.
+- Lat pulldown uses the pull-up settings. Not tested on pulldown video.
+- In the browser (headless Chrome): pull-up clip stu5_36 counted 6 of 6,
+  front raise clip stu7_16 (left arm) 4 of 4; replay unchanged.
+
+**Bench press was left out.** Elbow angle counted 125 of 322 reps (5 of 29
+clips exact). Fixed and per-clip thresholds and a wrist-height measure did
+not fix it. On clean side views with the whole body visible it worked
+(several exact, including two dumbbell presses), but pose tracking of a
+person lying down often jumps between frames in crowded or head-on clips,
+even with visibility above 0.6. A user side-view clip is needed before
+adding it.
 
 ## In-browser recording (headless Chrome, fake camera)
 

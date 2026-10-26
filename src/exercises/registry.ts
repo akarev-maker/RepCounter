@@ -19,7 +19,10 @@ export const LM = {
   RIGHT_ANKLE: 28,
 } as const;
 
-export type Joint = 'elbow' | 'knee';
+export type Joint = 'elbow' | 'knee' | 'shoulder';
+
+/** Body part named in the UI: one arm, both arms together, or the legs. */
+export type Limb = 'arm' | 'arms' | 'leg';
 
 /** Wording for exercises that flag reps below a movement reference. */
 export interface DepthWording {
@@ -43,8 +46,7 @@ export interface ExerciseDef {
   id: string;
   label: string;
   joint: Joint;
-  /** Body part named in the UI ("arm", "leg"). */
-  limb: 'arm' | 'leg';
+  limb: Limb;
   /**
    * Whether the user picks a side (left/right). Exercises that are not sided
    * use both sides of the body together: each frame is measured on the more
@@ -78,6 +80,13 @@ export interface ExerciseDef {
    *   decide when a change of camera distance can reset that reference.
    */
   measure: 'angle' | 'hipDrop';
+  /**
+   * For movements that rest at a small angle and rise (raises), a rep is
+   * down -> up -> down. Thresholds stay in real angles: `extendEnter` is
+   * the most the angle can be at rest (arm down), `flexEnter` the least it
+   * must reach at the top. The scorer flips them (180 - x) for the counter.
+   */
+  restsLow?: boolean;
   /** Value at or below this = bottom position reached; the rep counts. */
   flexEnter: number;
   /**
@@ -156,13 +165,15 @@ export const EXERCISES: Record<string, ExerciseDef> = {
       left: [LM.LEFT_HIP, LM.LEFT_KNEE, LM.LEFT_ANKLE],
       right: [LM.RIGHT_HIP, LM.RIGHT_KNEE, LM.RIGHT_ANKLE],
     },
-    // Every clip counted correctly from 80-88 here and 90-94 for standing.
+    // Every recorded clip counted correctly from 80-88 here and 90-94 for
+    // standing. 90 (not 92) counted best on RepCount-A: 11 of 18 held-out
+    // test clips exact instead of 9.
     flexEnter: 85,
     // The one visibly shallow rep read 68; full squats filmed from the front
     // read up to 64. Little margin either way.
     fullDepth: 65,
     minRepMs: 600,
-    extendEnter: 92,
+    extendEnter: 90,
     depth: {
       // How much the on-screen hip-to-ankle height shrank from standing. A
       // video measurement, not a joint angle or a form judgement.
@@ -175,6 +186,97 @@ export const EXERCISES: Record<string, ExerciseDef> = {
       cue: 'go deeper',
     },
     filmingHint: 'Counts each squat from how far your hips drop, and flags reps that could go deeper. Keep your whole body in frame, from the side or the front.',
+    defaults: { repRangeMin: 8, repRangeMax: 12, increment: 10, unit: 'lb' },
+  },
+  /**
+   * Shoulder angle (hip-shoulder-elbow): how far the upper arm is raised
+   * from the side of the body. Rests low, so the scorer flips it. RepCount-A
+   * has front raises only, so thresholds come from those clips; a lateral
+   * raise filmed from the front shows the same angle more directly.
+   */
+  'lateral-raise': {
+    id: 'lateral-raise',
+    label: 'Lateral Raise',
+    joint: 'shoulder',
+    limb: 'arm',
+    sided: true,
+    measure: 'angle',
+    restsLow: true,
+    weightNote: 'per dumbbell',
+    loadSuffix: ' per dumbbell',
+    allowBodyweight: false,
+    framingAdvice: 'Tracking needs your hip, shoulder and elbow in frame, with the phone held still.',
+    filmingTips: [
+      { t: 'Film from the front', d: 'Face the phone so the arm rises out to the side across the frame.' },
+      { t: 'Hip to hand in frame', d: 'Keep your hip, shoulder and elbow visible with the arm down and raised.' },
+      { t: 'Steady phone', d: 'Prop it up at chest height, a few steps away. Good light helps tracking.' },
+    ],
+    landmarks: {
+      left: [LM.LEFT_HIP, LM.LEFT_SHOULDER, LM.LEFT_ELBOW],
+      right: [LM.RIGHT_HIP, LM.RIGHT_SHOULDER, LM.RIGHT_ELBOW],
+    },
+    // Real angles: arm down at 35 deg or less, raised to at least 60 deg.
+    flexEnter: 60,
+    extendEnter: 35,
+    minRepMs: 600,
+    filmingHint: 'Film from the front, with nothing blocking the working arm.',
+    defaults: { repRangeMin: 12, repRangeMax: 20, increment: 2.5, unit: 'lb' },
+  },
+  /**
+   * Elbow angle, both arms together: hanging (straight) -> chin up (bent)
+   * -> hanging. Tuned on RepCount-A pull-up clips.
+   */
+  'pull-up': {
+    id: 'pull-up',
+    label: 'Pull-up',
+    joint: 'elbow',
+    limb: 'arms',
+    sided: false,
+    measure: 'angle',
+    weightNote: 'added weight, 0 for bodyweight',
+    loadSuffix: ' added',
+    allowBodyweight: true,
+    framingAdvice: 'Tracking needs your shoulders, elbows and wrists in frame, with the phone held still.',
+    filmingTips: [
+      { t: 'Front or back', d: 'Film from in front or behind, far enough back to see the bar.' },
+      { t: 'Hands to hips in frame', d: 'Keep the bar, your arms and shoulders visible when hanging and at the top.' },
+      { t: 'Steady phone', d: 'Prop it on the floor angled up. Good light helps tracking.' },
+    ],
+    landmarks: {
+      left: [LM.LEFT_SHOULDER, LM.LEFT_ELBOW, LM.LEFT_WRIST],
+      right: [LM.RIGHT_SHOULDER, LM.RIGHT_ELBOW, LM.RIGHT_WRIST],
+    },
+    flexEnter: 90,
+    extendEnter: 140,
+    minRepMs: 600,
+    filmingHint: 'Counts each pull from your elbow angle. Film from the front or behind with the bar and your arms in frame.',
+    defaults: { repRangeMin: 6, repRangeMax: 10, increment: 5, unit: 'lb' },
+  },
+  /** Same movement and thresholds as the pull-up. Not tested on pulldown video. */
+  'lat-pulldown': {
+    id: 'lat-pulldown',
+    label: 'Lat Pulldown',
+    joint: 'elbow',
+    limb: 'arms',
+    sided: false,
+    measure: 'angle',
+    weightNote: 'machine weight',
+    loadSuffix: '',
+    allowBodyweight: false,
+    framingAdvice: 'Tracking needs your shoulders, elbows and wrists in frame, with the phone held still.',
+    filmingTips: [
+      { t: 'Front or back', d: 'Film from in front or behind the seat, far enough back to see the bar.' },
+      { t: 'Bar to hips in frame', d: 'Keep the bar, your arms and shoulders visible with arms up and pulled down.' },
+      { t: 'Steady phone', d: 'Prop it up a few steps away. The machine frame can block tracking.' },
+    ],
+    landmarks: {
+      left: [LM.LEFT_SHOULDER, LM.LEFT_ELBOW, LM.LEFT_WRIST],
+      right: [LM.RIGHT_SHOULDER, LM.RIGHT_ELBOW, LM.RIGHT_WRIST],
+    },
+    flexEnter: 90,
+    extendEnter: 140,
+    minRepMs: 600,
+    filmingHint: 'Counts each pull from your elbow angle. Film from the front or behind with the bar and your arms in frame.',
     defaults: { repRangeMin: 8, repRangeMax: 12, increment: 10, unit: 'lb' },
   },
 };

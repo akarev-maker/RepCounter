@@ -1,7 +1,7 @@
 import type { Effort, ProgressionSettings, RepEvent, Side, Unit } from '../types';
 import type { OtherSideHint } from '../analysis/scoreFrames';
 import { armBalance } from '../counting/balance';
-import type { DepthWording } from '../exercises/registry';
+import type { DepthWording, Limb } from '../exercises/registry';
 import { armColor } from '../analysis/drawOverlay';
 import { formatTime } from './formatTime';
 import { IconCheck, IconMinus, IconPlus } from './icons';
@@ -29,8 +29,8 @@ export const EFFORTS: { value: Effort; label: string; hint: string }[] = [
 
 interface Props {
   arms: ArmResultView[];
-  /** Body part being tracked, for wording ("arm", "leg"). */
-  limb: 'arm' | 'leg';
+  /** Body part being tracked, for wording. */
+  limb: Limb;
   /** Depth wording for exercises that flag partial reps. */
   depth?: DepthWording;
   weightNote: string;
@@ -59,8 +59,8 @@ export function ResultsPanel(p: Props) {
   const weightNum = Number(p.weight);
   const weightOk =
     p.weight.trim() !== '' && Number.isFinite(weightNum) && (weightNum > 0 || (p.allowBodyweight && weightNum === 0));
-  const Limb = p.limb === 'arm' ? 'Arm' : 'Legs';
-  const single = p.limb === 'arm' ? 'arm' : 'legs';
+  const single = p.limb === 'leg' ? 'legs' : p.limb;
+  const limbLabel = single[0].toUpperCase() + single.slice(1);
   const missing = [!weightOk && 'weight', !p.effort && 'effort'].filter(Boolean);
 
   const right = p.arms.find((a) => a.side === 'right');
@@ -117,7 +117,7 @@ export function ResultsPanel(p: Props) {
             </>
           ) : (
             <>
-              {Limb} clearly visible in{' '}
+              {limbLabel} clearly visible in{' '}
               <span className="font-semibold tabular-nums text-ink">{Math.round((p.arms[0]?.trackedFraction ?? 0) * 100)}%</span>{' '}
               of analyzed frames.
             </>
@@ -150,7 +150,7 @@ export function ResultsPanel(p: Props) {
             <Notice tone="warn">
               {lostArms.length > 0
                 ? `Tracking was lost on the ${multi ? lostArms.map((a) => a.side).join(' and ') + ' arm' : single} during the clip (shaded on the timeline). Reps in progress at that moment were not counted, so check the total.`
-                : `The ${multi ? lowVisArms.map((a) => a.side).join(' and ') + ' arm was' : single + (p.limb === 'arm' ? ' was' : ' were')} hard to see for much of the clip, so check the total before saving.`}
+                : `The ${multi ? lowVisArms.map((a) => a.side).join(' and ') + ' arm was' : single + (single === 'arm' ? ' was' : ' were')} hard to see for much of the clip, so check the total before saving.`}
             </Notice>
           </div>
         )}

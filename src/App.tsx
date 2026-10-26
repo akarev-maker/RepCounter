@@ -243,7 +243,11 @@ export default function App() {
     setCounts(scored.map((r) => r.count));
     const best = Math.max(...scored.map((r) => r.trackedFraction));
     const what =
-      exercise.limb === 'leg' ? 'Your legs were' : sides.length > 1 ? 'Your arms were' : 'Your arm was';
+      exercise.limb === 'leg'
+        ? 'Your legs were'
+        : exercise.limb === 'arms' || sides.length > 1
+          ? 'Your arms were'
+          : 'Your arm was';
     setAnalysisError(
       best === 0
         ? `${what} not tracked in this clip. ${exercise.framingAdvice} Good light helps too.`

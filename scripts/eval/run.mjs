@@ -5,7 +5,8 @@
 //   npm run eval                    squat clips, test + validation if extracted
 //   npm run eval -- --rescore       score cached poses only (fast, no Chrome)
 //   npm run eval -- --action all    cache poses for every action (for new exercises)
-//   npm run eval -- --workers 4 --split test --verbose
+//   npm run eval -- --rescore --action bench_pressing --set flexEnter=95,extendEnter=150
+//   npm run eval -- --workers 2 --split test --verbose   (more workers = faster but hotter)
 //
 // Setup (once): scripts/eval/fetch-repcount.sh, then scripts/eval/extract-repcount.py.
 // RepCount-A is research-use only. The videos, poses and results stay in the
@@ -19,8 +20,11 @@ import { createServer } from 'vite';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const DATA = resolve(ROOT, 'test-videos/datasets/repcount');
 const CHROME = process.env.CHROME ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-/** RepCount-A action -> app exercise id. Only these are scored. */
-const EXERCISE_FOR = { squat: 'squat' };
+/**
+ * RepCount-A action -> app exercise id. Only these are scored. RepCount-A has
+ * front raises only; they stand in for the lateral raise (same shoulder angle).
+ */
+const EXERCISE_FOR = { squat: 'squat', bench_pressing: 'bench-press', front_raise: 'lateral-raise', pull_up: 'pull-up' };
 
 const args = process.argv.slice(2);
 const opt = (name, def) => {
@@ -30,9 +34,17 @@ const opt = (name, def) => {
 const flag = (name) => args.includes(`--${name}`);
 const splits = opt('split', 'test,validation').split(',');
 const action = opt('action', 'scored');
-const workers = Math.max(1, +opt('workers', 3));
+// One Chrome by default: each worker keeps a CPU core busy and heats a laptop.
+const workers = Math.max(1, +opt('workers', 1));
 const rescore = flag('rescore');
 const verbose = flag('verbose');
+// --set key=value,...: try other thresholds without editing the registry.
+const overrides = Object.fromEntries(
+  (opt('set', '') || '').split(',').filter(Boolean).map((kv) => {
+    const [k, v] = kv.split('=');
+    return [k, Number(v)];
+  }),
+);
 
 const labelsPath = resolve(DATA, 'labels.json');
 if (!existsSync(labelsPath)) {
@@ -66,6 +78,7 @@ if (todo.length) {
 }
 
 // ---- 2. Scoring ----
+if (Object.keys(overrides).length) console.log('overrides', overrides);
 const ssr = server.ssrLoadModule.bind(server);
 const { scoreFrames } = await ssr('/src/analysis/scoreFrames.ts');
 const { EXERCISES } = await ssr('/src/exercises/registry.ts');
@@ -74,13 +87,18 @@ await server.close();
 const rows = [];
 for (const l of labels) {
   const exId = EXERCISE_FOR[l.action];
-  if (!exId || !existsSync(posePath(l))) continue;
+  if (!exId || !EXERCISES[exId] || !existsSync(posePath(l))) continue;
   const pose = JSON.parse(readFileSync(posePath(l), 'utf8'));
   if (pose.error) {
     rows.push({ ...l, detected: null, error: pose.error });
     continue;
   }
-  const r = scoreFrames(pose.frames, EXERCISES[exId], null, pose.w / pose.h);
+  const def = { ...EXERCISES[exId], ...overrides };
+  // One-arm exercises: count each arm and keep the arm with more reps (the
+  // clips are mostly both arms together, and the working arm isn't labelled).
+  const r = def.sided
+    ? ['left', 'right'].map((side) => scoreFrames(pose.frames, def, side, pose.w / pose.h)).sort((a, b) => b.count - a.count)[0]
+    : scoreFrames(pose.frames, def, null, pose.w / pose.h);
   if (opt('trace') === l.id) {
     // --trace <clip id>: the measured value per frame, for finding why a clip fails.
     for (const f of r.frames) {
