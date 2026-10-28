@@ -21,6 +21,8 @@ interface Props {
   analyzing: boolean;
   decodeError: boolean;
   onPickFile: (file: File) => void;
+  /** Load and count the built-in sample clip. */
+  onSample: () => void;
   /** Open straight into the camera (the last set was recorded in the browser). */
   preferCamera?: boolean;
   onRecorded: (file: File) => void;
@@ -41,16 +43,18 @@ const armShort = (side: Side | null) => (side === 'left' ? 'L' : side === 'right
 
 export function VideoStage(props: Props) {
   const { videoUrl } = props;
-  if (!videoUrl) return <EmptyStage onPickFile={props.onPickFile} onRecorded={props.onRecorded} preferCamera={props.preferCamera} />;
+  if (!videoUrl) return <EmptyStage onPickFile={props.onPickFile} onSample={props.onSample} onRecorded={props.onRecorded} preferCamera={props.preferCamera} />;
   return <LoadedStage {...props} videoUrl={videoUrl} />;
 }
 
 function EmptyStage({
   onPickFile,
+  onSample,
   onRecorded,
   preferCamera,
 }: {
   onPickFile: (f: File) => void;
+  onSample: () => void;
   onRecorded: (f: File) => void;
   preferCamera?: boolean;
 }) {
@@ -123,7 +127,14 @@ function EmptyStage({
             Upload video
           </button>
         </div>
-        <p className="mt-4 text-xs text-white/40">The video stays on this device.</p>
+        <button
+          type="button"
+          onClick={onSample}
+          className="mt-4 text-sm font-semibold text-white/80 underline decoration-white/30 underline-offset-4 transition hover:text-white"
+        >
+          No video? Try a sample set
+        </button>
+        <p className="mt-3 text-xs text-white/40">The video stays on this device.</p>
       </div>
 
       <input

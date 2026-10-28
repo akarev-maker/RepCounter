@@ -9,6 +9,14 @@ count, log the weight, and get a next-session target.
 Everything runs on your device. Videos are never uploaded or stored; only the
 set summary (date, exercise, weight, reps, effort) is saved to `localStorage`.
 
+No video handy? **Try a sample set** loads a free side-view squat clip
+([Pexels 9001924](https://www.pexels.com/video/9001924/), 3 squats) and counts
+it. After saving, **Share** makes a story-sized image of the set (the phone's
+share sheet, or a download on desktop). The site can be added to the home
+screen. Inside TikTok, Instagram, Facebook, LinkedIn or Snapchat's built-in
+browser, a notice suggests opening the page in Safari or Chrome, since those
+often block the camera and uploads.
+
 ## Recording in the browser
 
 Tap **Record a set** to film with the phone or laptop camera instead of

@@ -51,6 +51,8 @@ interface Props {
 
   saved: boolean;
   onSave: () => void;
+  /** Share an image of the saved set. */
+  onShare: () => void;
   onNewSet: () => void;
 }
 
@@ -297,7 +299,10 @@ export function ResultsPanel(p: Props) {
               <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-700">
                 <IconCheck size={16} /> Saved to history
               </p>
-              <Button onClick={p.onNewSet}>Analyze next set</Button>
+              <div className="flex gap-2">
+                <Button onClick={p.onShare}>Share</Button>
+                <Button onClick={p.onNewSet}>Analyze next set</Button>
+              </div>
             </div>
           ) : (
             <>

@@ -10,6 +10,9 @@ import { addSession, clearSessions, deleteSession, loadSessions, newId } from '.
 import { loadSettings, saveSettings } from './storage/settings';
 import { ACCEPTED_VIDEO_TYPES, describeDecodeFailure, probeVideoFile, type VideoProbe } from './video/probeVideo';
 import { ensureFiniteDuration } from './video/recorder';
+import { inAppBrowserName } from './video/inAppBrowser';
+import { shareSet } from './share/shareCard';
+import { InstallHint } from './components/InstallHint';
 import type {
   AnalyzedFrame,
   ArmMode,
@@ -90,6 +93,13 @@ export default function App() {
   const probeRef = useRef<VideoProbe | null>(null);
   /** Whether the current (or last) clip was recorded here; the next set then opens the camera. */
   const [recorded, setRecorded] = useState(false);
+  /** The built-in sample clip is loaded. It is counted as soon as it can be. */
+  const [isSample, setIsSample] = useState(false);
+  const sampleAutoRunRef = useRef(false);
+  const inApp = useMemo(() => inAppBrowserName(navigator.userAgent), []);
+  const [linkCopied, setLinkCopied] = useState(false);
+  /** The set saved from the current result, for the Share button. */
+  const [lastSaved, setLastSaved] = useState<SessionSummary | null>(null);
 
   // Setup
   const [exerciseId, setExerciseId] = useState(DEFAULT_EXERCISE_ID);
@@ -322,6 +332,13 @@ export default function App() {
     }
   }
 
+  // Count the sample clip as soon as it and the pose model are ready.
+  useEffect(() => {
+    if (!sampleAutoRunRef.current || !videoReady || modelState !== 'ready' || analyzing || result) return;
+    sampleAutoRunRef.current = false;
+    void handleAnalyze();
+  });
+
   function handleSeek(ms: number) {
     const v = videoRef.current;
     if (!v || analyzing) return;
@@ -363,11 +380,39 @@ export default function App() {
       };
     }
     setSessions(addSession(summary));
+    setLastSaved(summary);
     setSaved(true);
     setToast('Set saved');
   }
 
+  /** Load the sample squat clip (Pexels 9001924, 3 squats) and count it. */
+  async function handleSample() {
+    try {
+      const res = await fetch(`${import.meta.env.BASE_URL}samples/squat-side.mp4`);
+      if (!res.ok) throw new Error(String(res.status));
+      const file = new File([await res.blob()], 'sample-squats.mp4', { type: 'video/mp4' });
+      handleExercise('squat');
+      setRecorded(false);
+      setIsSample(true);
+      sampleAutoRunRef.current = true;
+      await handleFile(file);
+    } catch {
+      setAnalysisError('Could not load the sample video. Check your connection and try again.');
+    }
+  }
+
+  async function handleShare() {
+    if (!lastSaved) return;
+    try {
+      const how = await shareSet(lastSaved);
+      if (how === 'downloaded') setToast('Image saved to your downloads');
+    } catch {
+      setToast('Could not make the image');
+    }
+  }
+
   function handleNewSet() {
+    setIsSample(false);
     clearResult();
     setVideoUrl(null);
     setVideoReady(false);
@@ -452,6 +497,27 @@ export default function App() {
         {tab === 'analyze' ? (
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-6">
             <div className="min-w-0 space-y-4">
+              {inApp && (
+                <Notice tone="warn">
+                  <p>
+                    You&apos;re in {inApp}&apos;s built-in browser, which often blocks the camera and video uploads.
+                    For the best result, open this page in Safari or Chrome: tap the <span className="font-semibold">⋯</span> or
+                    share menu and choose <span className="font-semibold">Open in browser</span>.
+                  </p>
+                  <button
+                    type="button"
+                    className="mt-2 font-semibold underline underline-offset-2"
+                    onClick={() => {
+                      navigator.clipboard
+                        ?.writeText(window.location.href)
+                        .then(() => setLinkCopied(true))
+                        .catch(() => window.prompt('Copy this link:', window.location.href));
+                    }}
+                  >
+                    {linkCopied ? 'Link copied' : 'Copy link'}
+                  </button>
+                </Notice>
+              )}
               {!videoUrl && (
                 <div className="mb-1">
                   <h1 className="text-balance text-[28px] font-bold leading-tight tracking-tight sm:text-[34px]">
@@ -459,8 +525,8 @@ export default function App() {
                   </h1>
                   <p className="mt-1.5 max-w-xl text-[15px] text-ink-2">
                     Record a set right here or upload a clip. Pose tracking runs in your browser and
-                    counts each full rep of curls (one arm or each arm separately) and squats. You
-                    confirm the numbers before anything is saved.
+                    counts each full rep of curls, squats, lateral raises, pull-ups and lat pulldowns.
+                    You confirm the numbers before anything is saved.
                   </p>
                 </div>
               )}
@@ -477,11 +543,14 @@ export default function App() {
                 decodeError={!!decodeError}
                 onPickFile={(f) => {
                   setRecorded(false);
+                  setIsSample(false);
                   void handleFile(f);
                 }}
+                onSample={() => void handleSample()}
                 preferCamera={recorded}
                 onRecorded={(f) => {
                   setRecorded(true);
+                  setIsSample(false);
                   void handleFile(f);
                 }}
                 onLoadedMetadata={(v) => void handleLoadedMetadata(v)}
@@ -495,6 +564,11 @@ export default function App() {
                 </Notice>
               )}
               {analysisError && <Notice tone="warn">{analysisError}</Notice>}
+              {isSample && (
+                <Notice tone="info">
+                  Sample clip: 3 squats filmed from the side (free video from Pexels). Try your own set next.
+                </Notice>
+              )}
 
               {!videoUrl && <FilmingTips tips={exercise.filmingTips} both={effectiveMode === 'both'} />}
             </div>
@@ -542,11 +616,13 @@ export default function App() {
                   onEffort={setEffort}
                   saved={saved}
                   onSave={handleSave}
+                  onShare={() => void handleShare()}
                   onNewSet={handleNewSet}
                 />
               )}
 
               {target}
+              <InstallHint show={saved || sessions.length > 0} inApp={!!inApp} />
             </aside>
           </div>
         ) : (
