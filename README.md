@@ -109,7 +109,7 @@ npm run eval                         # first run extracts poses (about 1 min per
 npm run eval -- --rescore            # re-count from cached poses in seconds
 ```
 
-Shoulder press is checked on seated dumbbell press sets from
+Shoulder press and lateral raise are also checked on seated dumbbell sets from
 [MM-Fit](https://mmfit.github.io/) (Strömbäck, Huang and Radu, IMWUT 2020;
 videos on [Zenodo](https://zenodo.org/records/7672767), CC BY 4.0):
 `python3 scripts/eval/mmfit-labels.py`, then `python3 scripts/eval/mmfit-clips.py`,

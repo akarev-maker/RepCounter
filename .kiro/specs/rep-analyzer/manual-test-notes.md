@@ -328,15 +328,21 @@ counted when the dumbbells come back down (rests at ≤ 100°, pressed to
 
 | Result | Sets |
 |---|---|
-| Exact count | 49 of 59 |
-| Off by at most 1 | 59 of 59 |
-| Reps counted | 584 of 588 |
+| Exact count | 50 of 60 |
+| Off by at most 1 | 60 of 60 |
+| Reps counted | 594 of 598 |
 
-One set (w06_07) has no result: its pose extraction was stopped part way.
 In the browser, set w19_06 counted 10 of 10.
 
 Not tested: standing presses, presses filmed from the side, barbell
-presses. Bench press was tried again on RepCount-A (near arm only, heavier
+presses.
+
+**Lateral raise on MM-Fit.** 56 seated dumbbell lateral raise sets, filmed
+from the front, scored on the arm with more reps, with the thresholds tuned
+earlier on RepCount-A front raises (arm down ≤ 35°, raised ≥ 60°):
+43 of 56 exact, 51 of 56 within one rep, 538 of 559 reps. Every miss is an
+undercount (no extra reps); the worst sets (−3) are from three people whose
+raises often stop short of 60°. Bench press was tried again on RepCount-A (near arm only, heavier
 smoothing) and still found only about two thirds of reps on the tuning
 clips, so it stays out.
 

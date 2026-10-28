@@ -168,6 +168,8 @@ for (const exId of new Set(rows.map((r) => EXERCISE_FOR[r.action]))) {
 }
 writeFileSync(resolve(DATA, 'eval-results.json'), JSON.stringify(rows, null, 1));
 console.log(`\nper-clip results: ${resolve(DATA, 'eval-results.json')}`);
+// Exit explicitly: a closed Chrome socket or the Vite server can keep Node alive.
+process.exit(0);
 
 // ---- Chrome worker ----
 async function worker(w, base, queue, tick) {
