@@ -17,12 +17,13 @@
       no video), so nothing leaves the device. ws://localhost is Vite's dev reload.
     -->
     <meta http-equiv="Content-Security-Policy" content="connect-src 'self' blob: data: ws://localhost:*" />
-    <title>RepCounter — count reps from a video</title>
+    <title>RepCounter AI: free rep counter from video (repcounterai.com)</title>
+    <link rel="canonical" href="https://repcounterai.com/" />
     <meta name="description" content="Film or upload a set and count your reps in the browser. Curls, squats, lateral raises and pull-ups. Videos never leave your phone." />
     <!-- Link previews (LinkedIn, iMessage, X, etc.). Image URLs must be absolute. -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="RepCounter" />
-    <meta property="og:title" content="RepCounter — count reps from a video" />
+    <meta property="og:title" content="RepCounter AI: count your reps from a video" />
     <meta property="og:description" content="Film or upload a set and count your reps in the browser. Curls, squats, lateral raises and pull-ups. Videos never leave your phone." />
     <meta property="og:url" content="https://repcounterai.com/" />
     <meta property="og:image" content="https://repcounterai.com/og-image.png" />
@@ -30,9 +31,52 @@
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="RepCounter showing 6 squats counted from a video, with the tracked hip, knee and ankle drawn on the person." />
     <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "RepCounter AI",
+        "alternateName": "RepCounter",
+        "url": "https://repcounterai.com/",
+        "image": "https://repcounterai.com/og-image.png",
+        "description": "Free AI rep counter that runs in your browser. Record or upload a workout video and it counts your reps for dumbbell curls, squats, lateral raises, pull-ups and lat pulldowns. Videos never leave your device.",
+        "applicationCategory": "HealthApplication",
+        "operatingSystem": "Any (web browser)",
+        "browserRequirements": "Requires a modern browser with WebGL or WebAssembly",
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "featureList": [
+          "Counts reps from a recorded or uploaded video",
+          "Counts each arm separately and flags uneven sets",
+          "Flags squats that could go deeper",
+          "Next-set targets with double progression",
+          "Runs fully on your device; videos are never uploaded"
+        ]
+      }
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <!--
+      Shown until the app loads (and to search engines that don't run
+      JavaScript). React replaces it on start. Keep it in line with the app.
+    -->
+    <div id="root">
+      <main style="max-width: 640px; margin: 48px auto; padding: 0 20px; font-family: system-ui, sans-serif; color: #121211">
+        <h1>RepCounter AI: count your reps from a video</h1>
+        <p>
+          Record a set with your phone or upload a clip, and RepCounter AI counts your reps in the browser
+          using pose tracking. It works for dumbbell curls (each arm counted separately), squats, lateral
+          raises, pull-ups and lat pulldowns. Squats that could go deeper are flagged, and you confirm the
+          count before saving.
+        </p>
+        <p>
+          It is free, needs no account and nothing to install. Your video never leaves your device: only a
+          short set summary (exercise, weight, reps) is saved, in your browser. Each saved set gives you a
+          next-set target with double progression.
+        </p>
+        <noscript><p><strong>RepCounter AI needs JavaScript turned on to count reps.</strong></p></noscript>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
