@@ -223,6 +223,40 @@ export const EXERCISES: Record<string, ExerciseDef> = {
     defaults: { repRangeMin: 12, repRangeMax: 20, increment: 2.5, unit: 'lb' },
   },
   /**
+   * Elbow angle, both arms together: dumbbells at the shoulders (bent),
+   * pressed overhead (straight), back down. Tuned on MM-Fit seated dumbbell
+   * shoulder press sets filmed from the front; see manual-test-notes.md.
+   */
+  'shoulder-press': {
+    id: 'shoulder-press',
+    label: 'Shoulder Press',
+    joint: 'elbow',
+    limb: 'arms',
+    sided: false,
+    measure: 'angle',
+    weightNote: 'per dumbbell',
+    loadSuffix: ' per dumbbell',
+    allowBodyweight: false,
+    framingAdvice: 'Tracking needs your shoulders, elbows and wrists in frame, with the phone held still.',
+    filmingTips: [
+      { t: 'Film from the front', d: 'Face the phone, a few steps away, so both arms are seen straight on.' },
+      { t: 'Hands overhead in frame', d: 'Leave room above your head so the dumbbells stay in frame at the top.' },
+      { t: 'Steady phone', d: 'Prop it up at chest height. Good light helps tracking.' },
+    ],
+    landmarks: {
+      left: [LM.LEFT_SHOULDER, LM.LEFT_ELBOW, LM.LEFT_WRIST],
+      right: [LM.RIGHT_SHOULDER, LM.RIGHT_ELBOW, LM.RIGHT_WRIST],
+    },
+    // Rests bent (dumbbells at the shoulders), so a rep counts when they come
+    // back down. Real angles: rest at 100 deg or less, pressed to 145 or more.
+    restsLow: true,
+    flexEnter: 145,
+    extendEnter: 100,
+    minRepMs: 600,
+    filmingHint: 'Counts each press from your elbow angle, both arms together. Film from the front with room above your head.',
+    defaults: { repRangeMin: 8, repRangeMax: 12, increment: 5, unit: 'lb' },
+  },
+  /**
    * Elbow angle, both arms together: hanging (straight) -> chin up (bent)
    * -> hanging. Tuned on RepCount-A pull-up clips.
    */

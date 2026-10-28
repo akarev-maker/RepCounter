@@ -98,6 +98,29 @@ describe('lateral raise (rests low, counted on the way back down)', () => {
   });
 });
 
+describe('shoulder press (rests bent, counted when the dumbbells come back down)', () => {
+  const press = EXERCISES['shoulder-press'];
+  const run = (keys: [number, number][]) => scoreFrames(trace(keys).map(({ tMs, v }) => pullPose(tMs, v)), press, null, 1);
+  const reps = (n: number, top: number): [number, number][] => {
+    const k: [number, number][] = [[0, 80], [1, 80]];
+    for (let i = 0; i < n; i++) k.push([1.8 + 2 * i, top], [2.2 + 2 * i, top], [3 + 2 * i, 80]);
+    k.push([k[k.length - 1][0] + 1, 80]);
+    return k;
+  };
+
+  it('3 presses from the shoulders, ending at the shoulders: 3', () => {
+    expect(run(reps(3, 170)).count).toBe(3);
+  });
+
+  it('half presses that stop at 130 deg are not counted', () => {
+    expect(run(reps(3, 130)).count).toBe(0);
+  });
+
+  it('a clip that starts with the arms locked out does not count the first lowering', () => {
+    expect(run([[0, 170], [0.5, 170], [1.3, 80], [2, 80], [2.8, 170], [3.2, 170], [4, 80], [5, 80]]).count).toBe(1);
+  });
+});
+
 describe('pull-up (elbow angle, both arms)', () => {
   const pull = EXERCISES['pull-up'];
   const run = (keys: [number, number][]) => scoreFrames(trace(keys).map(({ tMs, v }) => pullPose(tMs, v)), pull, null, 1);

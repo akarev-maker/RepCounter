@@ -18,13 +18,20 @@ import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const DATA = resolve(ROOT, 'test-videos/datasets/repcount');
+const args0 = process.argv.slice(2);
+// --dataset repcount (RepCount-A, default) or mmfit (MM-Fit sets, see scripts/eval/mmfit-clips.py).
+const DATASET = args0.includes('--dataset') ? args0[args0.indexOf('--dataset') + 1] : 'repcount';
+const DATA = resolve(ROOT, 'test-videos/datasets', DATASET);
 const CHROME = process.env.CHROME ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 /**
  * RepCount-A action -> app exercise id. Only these are scored. RepCount-A has
  * front raises only; they stand in for the lateral raise (same shoulder angle).
  */
-const EXERCISE_FOR = { squat: 'squat', bench_pressing: 'bench-press', front_raise: 'lateral-raise', pull_up: 'pull-up' };
+const EXERCISE_FOR = {
+  squat: 'squat', bench_pressing: 'bench-press', front_raise: 'lateral-raise', pull_up: 'pull-up',
+  // MM-Fit
+  dumbbell_shoulder_press: 'shoulder-press', lateral_shoulder_raises: 'lateral-raise', squats: 'squat', bicep_curls: 'dumbbell-curl',
+};
 
 const args = process.argv.slice(2);
 const opt = (name, def) => {
@@ -48,7 +55,9 @@ const overrides = Object.fromEntries(
 
 const labelsPath = resolve(DATA, 'labels.json');
 if (!existsSync(labelsPath)) {
-  console.error('No labels. Run scripts/eval/fetch-repcount.sh, then scripts/eval/extract-repcount.py.');
+  console.error(DATASET === 'mmfit'
+    ? 'No labels. Run scripts/eval/mmfit-labels.py, then scripts/eval/mmfit-clips.py.'
+    : 'No labels. Run scripts/eval/fetch-repcount.sh, then scripts/eval/extract-repcount.py.');
   process.exit(1);
 }
 const labels = JSON.parse(readFileSync(labelsPath, 'utf8')).filter(
@@ -126,7 +135,7 @@ const pad = (s, n) => String(s).padEnd(n);
 const lpad = (s, n) => String(s).padStart(n);
 for (const exId of new Set(rows.map((r) => EXERCISE_FOR[r.action]))) {
   const rs = rows.filter((r) => EXERCISE_FOR[r.action] === exId).sort((a, b) => Math.abs(b.detected - b.count) - Math.abs(a.detected - a.count));
-  console.log(`\n${EXERCISES[exId].label}: ${rs.length} RepCount-A clips (${[...new Set(rs.map((r) => r.split))].join(', ')})`);
+  console.log(`\n${EXERCISES[exId].label}: ${rs.length} ${DATASET === 'mmfit' ? 'MM-Fit' : 'RepCount-A'} clips (${[...new Set(rs.map((r) => r.split))].join(', ')})`);
   console.log(`${pad('clip', 22)}${lpad('true', 5)}${lpad('found', 6)}${lpad('diff', 6)}${lpad('tracked', 9)}  notes`);
   for (const r of rs) {
     const diff = r.detected === null ? '' : r.detected - r.count;
@@ -181,7 +190,7 @@ async function worker(w, base, queue, tick) {
         await cdp.send('Page.navigate', { url: `${base}scripts/eval/extract.html` });
         await cdp.waitFor('!!window.extractReady', 30000);
         await cdp.eval('window.extractReady.then(() => true)', 60000);
-        const json = await cdp.eval(`window.extractPoses(${JSON.stringify(`/test-videos/datasets/repcount/${l.file}`)}).then(JSON.stringify)`, 15 * 60000);
+        const json = await cdp.eval(`window.extractPoses(${JSON.stringify(`/test-videos/datasets/${DATASET}/${l.file}`)}).then(JSON.stringify)`, 15 * 60000);
         result = { ...JSON.parse(json), fps };
       } catch (e) {
         result = { error: String(e.message ?? e).slice(0, 200), fps };

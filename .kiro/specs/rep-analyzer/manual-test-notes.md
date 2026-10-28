@@ -2,7 +2,7 @@
 
 Last updated: 2026-10-26. Separates what was actually run from what is assumed.
 
-## Automated unit tests (`npm test`, 94 passing)
+## Automated unit tests (`npm test`, 97 passing)
 
 `src/analysis/armExercises.test.ts`: synthetic poses for the lateral raise
 (counts only the working arm, ignores lifts to 45°, shows the real shoulder
@@ -318,6 +318,27 @@ not fix it. On clean side views with the whole body visible it worked
 person lying down often jumps between frames in crowded or head-on clips,
 even with visibility above 0.6. A user side-view clip is needed before
 adding it.
+
+## Shoulder press on MM-Fit (2026-10-28)
+
+60 seated dumbbell shoulder press sets from MM-Fit (20 people, filmed from
+the front at 30 fps, rep counts from the dataset). Elbow angle, both arms,
+counted when the dumbbells come back down (rests at ≤ 100°, pressed to
+≥ 145°). Thresholds were set once and not tuned to this data.
+
+| Result | Sets |
+|---|---|
+| Exact count | 49 of 59 |
+| Off by at most 1 | 59 of 59 |
+| Reps counted | 584 of 588 |
+
+One set (w06_07) has no result: its pose extraction was stopped part way.
+In the browser, set w19_06 counted 10 of 10.
+
+Not tested: standing presses, presses filmed from the side, barbell
+presses. Bench press was tried again on RepCount-A (near arm only, heavier
+smoothing) and still found only about two thirds of reps on the tuning
+clips, so it stays out.
 
 ## In-browser recording (headless Chrome, fake camera)
 

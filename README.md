@@ -50,6 +50,8 @@ secure page: `localhost`, or the site served over https.
      new standing height.
    - Lateral raise: shoulder angle (hip–shoulder–elbow), one arm at a time
      or both. A rep is arm down (≤ 35°), raised (≥ 60°), and back down.
+   - Shoulder press: elbow angle with both arms. A rep is dumbbells at the
+     shoulders (≤ 100°), pressed overhead (≥ 145°), and back down.
    - Pull-up and lat pulldown: elbow angle with both arms, straight
      (≥ 140°), bent (≤ 90°), and back to straight.
 3. Each rep gets a timestamp you can click to jump to it in the video.
@@ -61,8 +63,8 @@ secure page: `localhost`, or the site served over https.
 ## Supported
 
 - Exercises: dumbbell curl and lateral raise (one arm, or both arms
-  together or alternating), squat (bodyweight or loaded), pull-up and lat
-  pulldown. Raise and pull-up thresholds were tuned on RepCount-A clips (see
+  together or alternating), squat (bodyweight or loaded), shoulder press,
+  pull-up and lat pulldown. Raise and pull-up thresholds were tuned on RepCount-A clips (see
   Dataset eval); lat pulldown uses the pull-up settings and has not been
   tested on pulldown video. Bench press was tried and left out: it counted
   well from the side but badly in crowded or head-on clips.
@@ -72,7 +74,8 @@ secure page: `localhost`, or the site served over https.
   front-facing is best for both-arm sets. Squats need hips, knees and ankles
   in frame; side, three-quarter and front views all work. Lateral raises:
   film from the front. Pull-ups and pulldowns: from the front or behind,
-  with the bar in frame.
+  with the bar in frame. Shoulder press: from the front, with room above
+  your head.
 
 ## Run it
 
@@ -105,6 +108,13 @@ test-videos/.venv/bin/python scripts/eval/extract-repcount.py test validation
 npm run eval                         # first run extracts poses (about 1 min per clip per worker)
 npm run eval -- --rescore            # re-count from cached poses in seconds
 ```
+
+Shoulder press is checked on seated dumbbell press sets from
+[MM-Fit](https://mmfit.github.io/) (Strömbäck, Huang and Radu, IMWUT 2020;
+videos on [Zenodo](https://zenodo.org/records/7672767), CC BY 4.0):
+`python3 scripts/eval/mmfit-labels.py`, then `python3 scripts/eval/mmfit-clips.py`,
+then `npm run eval -- --dataset mmfit`. Only the labelled sets are cut from
+the videos, about 25 MB.
 
 RepCount-A is for research use only. The videos, poses and results stay in
 the gitignored `test-videos/datasets/` and are never committed. Needs Chrome
