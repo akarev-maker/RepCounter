@@ -23,6 +23,8 @@ interface Props {
   onAnalyze: () => void;
   onCancel: () => void;
   onReplace: () => void;
+  /** Close the current video and go back to the empty screen. */
+  onRemove: () => void;
 }
 
 export function SetupPanel(p: Props) {
@@ -46,14 +48,24 @@ export function SetupPanel(p: Props) {
       <div className="flex items-center justify-between">
         <SectionLabel>Set up</SectionLabel>
         {(p.hasVideo || p.videoFailed) && (
-          <button
-            type="button"
-            onClick={p.onReplace}
-            disabled={locked}
-            className="text-[13px] font-semibold text-ink-2 underline-offset-4 hover:text-ink hover:underline disabled:opacity-40"
-          >
-            Replace video
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={p.onReplace}
+              disabled={locked}
+              className="text-[13px] font-semibold text-ink-2 underline-offset-4 hover:text-ink hover:underline disabled:opacity-40"
+            >
+              Replace video
+            </button>
+            <button
+              type="button"
+              onClick={p.onRemove}
+              disabled={locked}
+              className="text-[13px] font-semibold text-ink-2 underline-offset-4 hover:text-ink hover:underline disabled:opacity-40"
+            >
+              Remove
+            </button>
+          </div>
         )}
       </div>
 

@@ -411,6 +411,13 @@ export default function App() {
     }
   }
 
+  /** Back to the empty screen (upload, record or sample), without opening the camera. */
+  function handleRemoveVideo() {
+    sampleAutoRunRef.current = false;
+    setRecorded(false);
+    handleNewSet();
+  }
+
   function handleNewSet() {
     setIsSample(false);
     clearResult();
@@ -566,7 +573,16 @@ export default function App() {
               {analysisError && <Notice tone="warn">{analysisError}</Notice>}
               {isSample && (
                 <Notice tone="info">
-                  Sample clip: 3 squats filmed from the side (free video from Pexels). Try your own set next.
+                  <div className="flex items-center justify-between gap-3">
+                    <span>Sample clip: 3 squats filmed from the side (free video from Pexels).</span>
+                    <button
+                      type="button"
+                      onClick={handleRemoveVideo}
+                      className="shrink-0 font-semibold text-ink underline underline-offset-2"
+                    >
+                      Use my own video
+                    </button>
+                  </div>
                 </Notice>
               )}
 
@@ -593,6 +609,7 @@ export default function App() {
                 onAnalyze={handleAnalyze}
                 onCancel={() => abortRef.current?.abort()}
                 onReplace={() => replaceInputRef.current?.click()}
+                onRemove={handleRemoveVideo}
               />
 
               {result && !analyzing && (
