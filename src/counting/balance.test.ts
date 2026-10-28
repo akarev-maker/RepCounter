@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { armBalance, progressionReps } from './balance';
+import { armBalance, bothArmSave, progressionReps } from './balance';
 
 describe('armBalance', () => {
   it('flags a one-rep difference and names the arm with more reps', () => {
@@ -28,6 +28,17 @@ describe('armBalance', () => {
 
   it('returns null when neither arm did reps', () => {
     expect(armBalance(0, 0)).toBeNull();
+  });
+});
+
+describe('bothArmSave', () => {
+  it('saves a set where only one arm moved as a one-arm set for that arm', () => {
+    expect(bothArmSave(6, 0)).toEqual({ mode: 'one', side: 'right', reps: 6 });
+    expect(bothArmSave(0, 4)).toEqual({ mode: 'one', side: 'left', reps: 4 });
+  });
+  it('keeps both-arm sets as the weaker arm', () => {
+    expect(bothArmSave(9, 8)).toEqual({ mode: 'both', reps: 8 });
+    expect(bothArmSave(0, 0)).toEqual({ mode: 'both', reps: 0 });
   });
 });
 

@@ -3,7 +3,7 @@ import { DEFAULT_EXERCISE_ID, getExercise } from './exercises/registry';
 import { analyzeVideo } from './analysis/analyzeVideo';
 import { otherSideHint, scoreFrames, type OtherSideHint } from './analysis/scoreFrames';
 import { armColor } from './analysis/drawOverlay';
-import { progressionReps } from './counting/balance';
+import { bothArmSave } from './counting/balance';
 import { getPoseLandmarker } from './pose/poseLandmarker';
 import { suggestNext } from './progression/progression';
 import { addSession, clearSessions, deleteSession, loadSessions, newId } from './storage/sessions';
@@ -346,7 +346,11 @@ export default function App() {
     if (effectiveMode === 'both' && exercise.sided) {
       const at = (s: Side) => counts[result.arms.findIndex((a) => a.side === s)] ?? 0;
       const perArm = { right: at('right'), left: at('left') };
-      summary = { ...base, side: null, mode: 'both', perArm, reps: progressionReps(perArm.right, perArm.left) };
+      const s = bothArmSave(perArm.right, perArm.left);
+      summary =
+        s.mode === 'one'
+          ? { ...base, side: s.side, mode: 'one', reps: s.reps }
+          : { ...base, side: null, mode: 'both', perArm, reps: s.reps };
     } else {
       const reps = counts[0] ?? 0;
       const shallow = Math.min(reps, result.arms[0]?.reps.filter((r) => r.shallow).length ?? 0);

@@ -72,7 +72,9 @@ export function ResultsPanel(p: Props) {
   const shallowReps = allReps.filter((r) => r.shallow);
   const lowVisArms = p.arms.filter((a) => Math.round(a.trackedFraction * 100) < 60);
 
-  const saveLabel = multi
+  const saveLabel = balance?.tone === 'one-sided'
+    ? `Save ${balance.diff} rep${balance.diff === 1 ? '' : 's'} (${balance.stronger} arm)`
+    : multi
     ? `Save R ${right?.count ?? 0} · L ${left?.count ?? 0}`
     : `Save ${p.arms[0]?.count ?? 0} rep${p.arms[0]?.count === 1 ? '' : 's'}`;
 

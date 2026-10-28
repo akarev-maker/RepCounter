@@ -2,7 +2,7 @@
 
 Last updated: 2026-10-26. Separates what was actually run from what is assumed.
 
-## Automated unit tests (`npm test`, 86 passing)
+## Automated unit tests (`npm test`, 88 passing)
 
 `src/analysis/armExercises.test.ts`: synthetic poses for the lateral raise
 (counts only the working arm, ignores lifts to 45°, shows the real shoulder
