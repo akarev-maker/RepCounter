@@ -60,7 +60,6 @@ export function ResultsPanel(p: Props) {
   const weightOk =
     p.weight.trim() !== '' && Number.isFinite(weightNum) && (weightNum > 0 || (p.allowBodyweight && weightNum === 0));
   const single = p.limb === 'leg' ? 'legs' : p.limb;
-  const limbLabel = single[0].toUpperCase() + single.slice(1);
   const missing = [!weightOk && 'weight', !p.effort && 'effort'].filter(Boolean);
 
   const right = p.arms.find((a) => a.side === 'right');
@@ -107,7 +106,7 @@ export function ResultsPanel(p: Props) {
         <p className="mt-4 text-[13px] text-ink-2">
           {multi ? (
             <>
-              Visible in{' '}
+              Pose found in{' '}
               {p.arms.map((a, i) => (
                 <span key={a.side ?? i}>
                   {i > 0 && ', '}
@@ -115,13 +114,13 @@ export function ResultsPanel(p: Props) {
                   of frames ({a.side})
                 </span>
               ))}
-              .
+              . Check that the lines in the video sit on your arms.
             </>
           ) : (
             <>
-              {limbLabel} clearly visible in{' '}
+              Pose found in{' '}
               <span className="font-semibold tabular-nums text-ink">{Math.round((p.arms[0]?.trackedFraction ?? 0) * 100)}%</span>{' '}
-              of analyzed frames.
+              of analyzed frames. Check that the lines in the video sit on your {single}.
             </>
           )}
         </p>

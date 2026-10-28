@@ -1,0 +1,67 @@
+<!doctype html>
+<!--
+  Source for public/og-image.png (the 1200x630 link preview). Re-render with:
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars \
+    --window-size=1200,630 --screenshot=public/og-image.png scripts/og-image.html
+-->
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  @font-face { font-family: Inter; font-weight: 400; src: url(../node_modules/@fontsource/inter/files/inter-latin-400-normal.woff2); }
+  @font-face { font-family: Inter; font-weight: 600; src: url(../node_modules/@fontsource/inter/files/inter-latin-600-normal.woff2); }
+  @font-face { font-family: Inter; font-weight: 800; src: url(../node_modules/@fontsource/inter/files/inter-latin-800-normal.woff2); }
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
+  body { background: #f2f2ef; font-family: Inter, sans-serif; color: #121211; display: flex; align-items: center; gap: 56px; padding: 0 64px; box-sizing: border-box; }
+  .left { flex: 1; }
+  .brand { display: flex; align-items: center; gap: 14px; font-weight: 800; font-size: 30px; letter-spacing: -0.5px; }
+  .mark { width: 52px; height: 52px; border-radius: 14px; background: #121211; display: flex; align-items: center; justify-content: center; }
+  h1 { font-size: 62px; line-height: 1.04; letter-spacing: -2px; font-weight: 800; margin: 36px 0 22px; }
+  .sub { font-size: 25px; color: #4a4a44; line-height: 1.4; }
+  .chips { display: flex; gap: 10px; margin-top: 30px; flex-wrap: wrap; }
+  .chip { border: 1.5px solid #cfcfc8; background: #fff; border-radius: 999px; padding: 9px 18px; font-weight: 600; font-size: 19px; }
+  .stage { width: 420px; height: 520px; border-radius: 28px; background: #0e0e0d; position: relative; overflow: hidden; flex-shrink: 0; }
+  .stage svg { position: absolute; inset: 0; }
+  .badge { position: absolute; top: 22px; left: 22px; background: rgba(255,255,255,0.14); color: #fff; border-radius: 999px; padding: 10px 18px; font-weight: 600; font-size: 22px; }
+  .badge b { font-weight: 800; }
+  .result { position: absolute; left: 22px; right: 22px; bottom: 22px; background: #fff; border-radius: 18px; padding: 16px 20px; display: flex; align-items: baseline; gap: 10px; }
+  .result .n { font-size: 54px; font-weight: 800; letter-spacing: -2px; line-height: 1; }
+  .result .r { font-size: 24px; font-weight: 600; }
+  .result .note { margin-left: auto; font-size: 17px; color: #c2410c; font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="left">
+    <div class="brand">
+      <span class="mark">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M5 16.5l4.5-6 4 3.5L19 6.5" stroke="#ff5a1f" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="10.5" r="1.6" fill="#fff"/><circle cx="13.5" cy="14" r="1.6" fill="#fff"/></svg>
+      </span>
+      RepCounter
+    </div>
+    <h1>Count your reps<br />from a video.</h1>
+    <div class="sub">Film or upload a set. Pose tracking runs in your browser, and the video never leaves your phone.</div>
+    <div class="chips">
+      <span class="chip">Curls</span><span class="chip">Squats</span><span class="chip">Lateral raises</span><span class="chip">Pull-ups</span>
+    </div>
+  </div>
+  <div class="stage">
+    <!-- Stick figure at the bottom of a squat, side view, with the tracked leg drawn on top. -->
+    <svg width="420" height="520" viewBox="-10 30 420 520">
+      <g stroke="#3a3a36" stroke-width="16" stroke-linecap="round" fill="none">
+        <circle cx="196" cy="118" r="26" fill="#3a3a36" stroke="none" />
+        <path d="M200 150 L176 262" />
+        <path d="M196 170 L262 214" />
+      </g>
+      <path d="M176 262 L268 288 L238 388" stroke="#ff5a1f" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+      <g fill="#fff" stroke="#ff5a1f" stroke-width="5">
+        <circle cx="176" cy="262" r="10" /><circle cx="268" cy="288" r="10" /><circle cx="238" cy="388" r="10" />
+      </g>
+      <rect x="270" y="236" rx="16" width="132" height="34" fill="rgba(0,0,0,0.6)" />
+      <text x="336" y="260" fill="#fff" font-family="Inter" font-weight="600" font-size="19" text-anchor="middle">45% hip drop</text>
+      <path d="M120 392 L320 392" stroke="#2a2a27" stroke-width="4" />
+    </svg>
+    <div class="badge"><b>6</b> / 6 reps</div>
+    <div class="result"><span class="n">6</span><span class="r">reps</span><span class="note">Good depth</span></div>
+  </div>
+</body>
+</html>

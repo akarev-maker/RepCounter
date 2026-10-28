@@ -5,13 +5,25 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#f6f7fb" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
+    <!--
+      The page may only fetch from its own site. This blocks MediaPipe's usage
+      report (POST to odml.pa.googleapis.com: task type, OS family and timings,
+      no video), so nothing leaves the device. ws://localhost is Vite's dev reload.
+    -->
+    <meta http-equiv="Content-Security-Policy" content="connect-src 'self' blob: data: ws://localhost:*" />
     <title>RepCounter — count reps from a video</title>
+    <meta name="description" content="Film or upload a set and count your reps in the browser. Curls, squats, lateral raises and pull-ups. Videos never leave your phone." />
+    <!-- Link previews (LinkedIn, iMessage, X, etc.). Image URLs must be absolute. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="RepCounter" />
+    <meta property="og:title" content="RepCounter — count reps from a video" />
+    <meta property="og:description" content="Film or upload a set and count your reps in the browser. Curls, squats, lateral raises and pull-ups. Videos never leave your phone." />
+    <meta property="og:url" content="https://akarev-maker.github.io/RepCounter/" />
+    <meta property="og:image" content="https://akarev-maker.github.io/RepCounter/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="RepCounter showing 6 squats counted from a video, with the tracked hip, knee and ankle drawn on the person." />
+    <meta name="twitter:card" content="summary_large_image" />
   </head>
   <body>
     <div id="root"></div>
