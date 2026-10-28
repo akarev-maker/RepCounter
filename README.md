@@ -1,6 +1,6 @@
 # RepCounter
 
-**Try it:** https://akarev-maker.github.io/RepCounter/
+**Try it:** http://www.repcounterai.com/
 
 Upload a video of a set, and RepCounter counts your reps in the browser. For
 curls it tracks each arm separately and flags uneven sets. You can confirm or correct the
