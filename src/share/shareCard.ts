@@ -1,5 +1,5 @@
 import type { SessionSummary } from '../types';
-import { EXERCISES } from '../exercises/registry';
+import { lookupExercise } from '../exercises/registry';
 import { formatLoad } from '../progression/progression';
 
 /** Text on the share image for one saved set. Pure, so it can be tested. */
@@ -9,7 +9,7 @@ export function shareCardLines(s: SessionSummary): { count: string; unit: string
   const unit = perArm ? 'reps, right · left' : s.reps === 1 ? 'rep' : 'reps';
   const arm = !perArm && s.side ? ` · ${s.side} arm` : '';
   const load =
-    s.weight === 0 ? 'Bodyweight' : `${formatLoad(s.weight, s.unit)}${EXERCISES[s.exerciseId]?.loadSuffix ?? ''}`;
+    s.weight === 0 ? 'Bodyweight' : `${formatLoad(s.weight, s.unit)}${lookupExercise(s.exerciseId)?.loadSuffix ?? ''}`;
   const date = new Date(s.dateISO).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   return { count, unit, title: `${s.exerciseLabel}${arm}`, detail: `${load} · ${date}` };
 }

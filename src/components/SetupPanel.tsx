@@ -1,4 +1,6 @@
-import { EXERCISES, getExercise } from '../exercises/registry';
+import { useState } from 'react';
+import { EXERCISES, customExerciseDef, getExercise } from '../exercises/registry';
+import type { CustomExercise, CustomLoad } from '../storage/customExercises';
 import type { ArmMode, Side } from '../types';
 import { Button, Card, Notice, SectionLabel, Segmented } from './ui';
 
@@ -25,12 +27,29 @@ interface Props {
   onReplace: () => void;
   /** Close the current video and go back to the empty screen. */
   onRemove: () => void;
+  customExercises: CustomExercise[];
+  onAddExercise: (name: string, load: CustomLoad) => void;
+  onDeleteExercise: (id: string) => void;
+  /** Logging this set by hand instead of from video. */
+  manualEntry: boolean;
+  onManualEntry: (on: boolean) => void;
 }
 
 export function SetupPanel(p: Props) {
   const def = getExercise(p.exerciseId);
-  const exercises = Object.values(EXERCISES);
+  const exercises = [...Object.values(EXERCISES), ...p.customExercises.map(customExerciseDef)];
   const locked = p.analyzing;
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState('');
+  const [load, setLoad] = useState<CustomLoad>('total');
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const submitAdd = () => {
+    if (!name.trim()) return;
+    p.onAddExercise(name, load);
+    setName('');
+    setLoad('total');
+    setAdding(false);
+  };
   const canAnalyze =
     p.videoReady &&
     !p.analyzing &&
@@ -88,10 +107,73 @@ export function SetupPanel(p: Props) {
                   }`}
                 >
                   {x.label}
+                  {x.manual && (
+                    <span
+                      className={`ml-1.5 rounded px-1 py-px align-middle text-[10px] font-bold uppercase tracking-wide ${
+                        active ? 'bg-white/20 text-white' : 'bg-black/[0.06] text-ink-3'
+                      }`}
+                    >
+                      By hand
+                    </span>
+                  )}
                 </button>
               );
             })}
+            {!adding && (
+              <button
+                type="button"
+                disabled={locked}
+                onClick={() => setAdding(true)}
+                className="h-9 rounded-full border border-dashed border-line-strong px-3.5 text-sm font-semibold text-ink-2 transition hover:border-ink-3 hover:text-ink disabled:opacity-50"
+              >
+                + Add exercise
+              </button>
+            )}
           </div>
+          {adding && (
+            <form
+              className="mt-3 space-y-3 rounded-xl border border-line bg-canvas/60 p-3.5"
+              onSubmit={(e) => {
+                e.preventDefault();
+                submitAdd();
+              }}
+            >
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-medium text-ink-2">Exercise name</span>
+                <input
+                  autoFocus
+                  value={name}
+                  maxLength={40}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. Bench Press"
+                  className="h-10 w-full rounded-lg border border-line-strong bg-surface px-3 text-sm font-semibold outline-none placeholder:font-normal placeholder:text-ink-3 focus:border-ink focus:ring-4 focus:ring-black/5"
+                />
+              </label>
+              <div>
+                <span className="mb-1.5 block text-xs font-medium text-ink-2">Weight</span>
+                <Segmented<CustomLoad>
+                  value={load}
+                  onChange={setLoad}
+                  options={[
+                    { value: 'total', label: 'Total' },
+                    { value: 'per-dumbbell', label: 'Per dumbbell' },
+                    { value: 'bodyweight', label: 'Bodyweight' },
+                  ]}
+                />
+              </div>
+              <p className="text-xs leading-relaxed text-ink-3">
+                Added exercises aren&apos;t counted from video. You enter the reps, and sets and targets work the same.
+              </p>
+              <div className="flex justify-end gap-2">
+                <Button size="sm" variant="ghost" onClick={() => setAdding(false)}>
+                  Cancel
+                </Button>
+                <Button size="sm" variant="primary" type="submit" disabled={!name.trim()}>
+                  Add
+                </Button>
+              </div>
+            </form>
+          )}
         </div>
 
         {!def.sided && (
@@ -140,7 +222,40 @@ export function SetupPanel(p: Props) {
       </div>
 
       <div className="mt-5">
-        {p.analyzing ? (
+        {def.manual ? (
+          <div className="flex items-center justify-between gap-3 text-xs text-ink-3">
+            <span>Enter your reps under Log this set.</span>
+            {confirmDelete ? (
+              <span className="flex shrink-0 items-center gap-2">
+                <button type="button" className="font-semibold text-ink-2" onClick={() => setConfirmDelete(false)}>
+                  Keep
+                </button>
+                <button
+                  type="button"
+                  className="font-semibold text-red-700"
+                  onClick={() => {
+                    setConfirmDelete(false);
+                    p.onDeleteExercise(def.id);
+                  }}
+                >
+                  Delete {def.label}
+                </button>
+              </span>
+            ) : (
+              <button
+                type="button"
+                className="shrink-0 font-semibold text-ink-2 underline-offset-4 hover:text-red-700 hover:underline"
+                onClick={() => setConfirmDelete(true)}
+              >
+                Delete exercise
+              </button>
+            )}
+          </div>
+        ) : p.manualEntry ? (
+          <Button size="lg" className="w-full" onClick={() => p.onManualEntry(false)}>
+            Count from a video instead
+          </Button>
+        ) : p.analyzing ? (
           <div>
             <div className="flex items-baseline justify-between text-sm">
               <span className="font-semibold">Analyzing frames</span>
@@ -165,6 +280,15 @@ export function SetupPanel(p: Props) {
               {p.hasResult ? 'Count again' : 'Count reps'}
             </Button>
             {hint && <p className="mt-2 text-center text-xs text-ink-3">{hint}</p>}
+            {!p.hasResult && (
+              <button
+                type="button"
+                onClick={() => p.onManualEntry(true)}
+                className="mt-2 w-full text-center text-xs font-semibold text-ink-2 underline-offset-4 hover:text-ink hover:underline"
+              >
+                No video? Enter reps by hand
+              </button>
+            )}
           </>
         )}
       </div>

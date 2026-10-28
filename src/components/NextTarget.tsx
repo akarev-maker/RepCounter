@@ -12,7 +12,7 @@ interface Props {
   onSettings: (s: ProgressionSettings) => void;
 }
 
-export function NextTarget({ title = 'Next session', suggestion, settings, incrementUnit, onSettings }: Props) {
+export function NextTarget({ title = 'Next workout', suggestion, settings, incrementUnit, onSettings }: Props) {
   const [open, setOpen] = useState(false);
 
   const setNum = (key: keyof ProgressionSettings, raw: string, min = 0) => {
@@ -54,8 +54,8 @@ export function NextTarget({ title = 'Next session', suggestion, settings, incre
         </div>
       ) : (
         <p className="mt-3 text-sm leading-relaxed text-ink-2">
-          Save a set to get a target for next time. Targets come from your saved history and the
-          rules below, so you can always see why.
+          Save a set to get a target for next time. Targets come from all the sets you saved in your
+          last workout and the rules below, so you can always see why.
         </p>
       )}
 
@@ -69,8 +69,7 @@ export function NextTarget({ title = 'Next session', suggestion, settings, incre
             Rep range <span className="font-semibold tabular-nums text-ink">{settings.repRangeMin}–{settings.repRangeMax}</span>
           </span>
           <span>
-            Add <span className="font-semibold tabular-nums text-ink">{settings.increment} {incrementUnit}</span> after{' '}
-            {settings.successSetsRequired} top set{settings.successSetsRequired === 1 ? '' : 's'}
+            Weight steps of <span className="font-semibold tabular-nums text-ink">{settings.increment} {incrementUnit}</span>
           </span>
         </button>
       )}
@@ -81,36 +80,36 @@ export function NextTarget({ title = 'Next session', suggestion, settings, incre
           <RepRangePicker settings={settings} onSettings={onSettings} />
           <div className="mt-4 grid grid-cols-2 gap-3">
             <NumField
-              label={`Smallest jump (${incrementUnit})`}
+              label={`Weight step (${incrementUnit})`}
               value={settings.increment}
               step="any"
               onChange={(v) => setNum('increment', v, 0)}
             />
-            <NumField
-              label="Top-of-range sets first"
-              value={settings.successSetsRequired}
-              onChange={(v) => setNum('successSetsRequired', v, 1)}
-            />
           </div>
-          <ol className="mt-4 space-y-1.5 text-[13px] leading-relaxed text-ink-2">
-            <li>
-              <span className="font-semibold text-ink">Below {settings.repRangeMin} reps or Failed:</span> repeat the weight.
-            </li>
-            {settings.repRangeMax > settings.repRangeMin && (
+          <p className="mt-4 text-[13px] leading-relaxed text-ink-2">
+            All sets saved on the same day are one workout. Rules use that workout&apos;s sets at its heaviest
+            weight, so lighter warm-up sets don&apos;t hold you back.
+          </p>
+          <ol className="mt-3 space-y-1.5 text-[13px] leading-relaxed text-ink-2">
+            {settings.repRangeMin > 3 && (
               <li>
-                <span className="font-semibold text-ink">
-                  {settings.repRangeMax - 1 === settings.repRangeMin
-                    ? `${settings.repRangeMin} reps`
-                    : `${settings.repRangeMin}–${settings.repRangeMax - 1} reps`}
-                  :
-                </span>{' '}
-                same weight, one more rep.
+                <span className="font-semibold text-ink">Best set {settings.repRangeMin - 3} reps or fewer:</span> drop{' '}
+                {settings.increment} {incrementUnit} and aim for {settings.repRangeMin}.
               </li>
             )}
             <li>
-              <span className="font-semibold text-ink">{settings.repRangeMax}+ reps:</span> add {settings.increment}{' '}
-              {incrementUnit} once you&apos;ve done it in {settings.successSetsRequired} set
-              {settings.successSetsRequired === 1 ? '' : 's'} in a row at that weight.
+              <span className="font-semibold text-ink">A set below {settings.repRangeMin}, or marked Failed:</span> same
+              weight, one more rep.
+            </li>
+            <li>
+              <span className="font-semibold text-ink">
+                Weakest set {settings.repRangeMin}–{Math.max(settings.repRangeMin, settings.repRangeMax - 1)} reps:
+              </span>{' '}
+              same weight, one more rep.
+            </li>
+            <li>
+              <span className="font-semibold text-ink">Every set {settings.repRangeMax}+ reps:</span> add {settings.increment}{' '}
+              {incrementUnit} next workout.
             </li>
           </ol>
         </div>

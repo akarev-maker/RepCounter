@@ -22,6 +22,8 @@ export interface SessionSummary {
   reps: number;
   /** Confirmed count per arm, for both-arm sets only. */
   perArm?: { left: number; right: number };
+  /** Entered by hand rather than counted from a video. */
+  manual?: boolean;
   /** Counted reps flagged below the exercise's movement reference. */
   shallowReps?: number;
   effort: Effort;
@@ -90,7 +92,6 @@ export interface ProgressionSettings {
   repRangeMax: number;
   increment: number;
   unit: Unit;
-  successSetsRequired: number;
 }
 
 export interface Suggestion {

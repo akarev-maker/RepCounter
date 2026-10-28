@@ -1,11 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { DEFAULT_EXERCISE_ID, getExercise } from './exercises/registry';
+import { DEFAULT_EXERCISE_ID, getExercise, type ExerciseDef } from './exercises/registry';
 import { analyzeVideo } from './analysis/analyzeVideo';
 import { otherSideHint, scoreFrames, type OtherSideHint } from './analysis/scoreFrames';
 import { armColor } from './analysis/drawOverlay';
 import { bothArmSave } from './counting/balance';
 import { getPoseLandmarker } from './pose/poseLandmarker';
-import { suggestNext } from './progression/progression';
+import { dayOf, suggestNext } from './progression/progression';
+import {
+  addCustomExercise,
+  loadCustomExercises,
+  removeCustomExercise,
+  type CustomExercise,
+  type CustomLoad,
+} from './storage/customExercises';
 import { addSession, clearSessions, deleteSession, loadSessions, newId } from './storage/sessions';
 import { loadSettings, saveSettings } from './storage/settings';
 import { ACCEPTED_VIDEO_TYPES, describeDecodeFailure, probeVideoFile, type VideoProbe } from './video/probeVideo';
@@ -48,6 +55,21 @@ interface ResultState {
 function sidesFor(sided: boolean, mode: ArmMode, side: Side | null): (Side | null)[] {
   if (!sided) return [null];
   return mode === 'both' ? ['right', 'left'] : [side ?? 'right'];
+}
+
+/** An empty result for logging a set by hand: one count per arm, starting at 0. */
+function manualResult(def: ExerciseDef, mode: ArmMode, side: Side | null): ResultState {
+  return {
+    arms: sidesFor(def.sided, def.sided ? mode : 'one', side).map((s) => ({
+      side: s,
+      detected: 0,
+      reps: [],
+      trackedFraction: 1,
+      everLostTracking: false,
+      lostSpans: [],
+    })),
+    hint: null,
+  };
 }
 
 /** Raw pose data from the single scan of the current clip. */
@@ -105,7 +127,12 @@ export default function App() {
   const [exerciseId, setExerciseId] = useState(DEFAULT_EXERCISE_ID);
   const [side, setSide] = useState<Side | null>('right');
   const [mode, setMode] = useState<ArmMode>('one');
-  const exercise = useMemo(() => getExercise(exerciseId), [exerciseId]);
+  const [customExercises, setCustomExercises] = useState<CustomExercise[]>(() => loadCustomExercises());
+  // customExercises is a dependency because getExercise reads the custom list.
+  const exercise = useMemo(() => getExercise(exerciseId), [exerciseId, customExercises]);
+  /** Logging by hand: always for user-added exercises, or when chosen for a tracked one. */
+  const [manualChosen, setManualChosen] = useState(false);
+  const isManual = !!exercise.manual || manualChosen;
   const effectiveMode: ArmMode = exercise.sided ? mode : 'one';
 
   // Analysis
@@ -179,6 +206,11 @@ export default function App() {
     [history],
   );
   const suggestion = useMemo(() => suggestNext(history, settings), [history, settings]);
+  // Recomputed on every render so a workout that crosses midnight starts a new day.
+  const today = dayOf(new Date().toISOString());
+  const todaySets = history
+    .filter((s) => dayOf(s.dateISO) === today)
+    .sort((a, b) => Date.parse(a.dateISO) - Date.parse(b.dateISO));
 
   function clearResult() {
     abortRef.current?.abort();
@@ -221,10 +253,44 @@ export default function App() {
     if (id === exerciseId) return;
     clearResult();
     setExerciseId(id);
+    setManualChosen(false);
     const s = loadSettings(id);
     setSettings(s);
-    if (!getExercise(id).sided) setSide(null);
-    else setSide((prev) => prev ?? 'right');
+    const def = getExercise(id);
+    const nextSide = def.sided ? (side ?? 'right') : null;
+    setSide(nextSide);
+    if (def.manual) startManual(def, mode, nextSide);
+  }
+
+  /** Show the by-hand log form (counts start at 0) and fill in the last weight. */
+  function startManual(def: ExerciseDef, forMode: ArmMode, forSide: Side | null) {
+    clearResult();
+    const r = manualResult(def, forMode, forSide);
+    setResult(r);
+    setCounts(r.arms.map(() => 0));
+  }
+
+  function handleManualEntry(on: boolean) {
+    setManualChosen(on);
+    if (on) {
+      startManual(exercise, effectiveMode, side);
+      if (!weight && lastSet) {
+        setWeight(String(lastSet.weight));
+        setUnit(lastSet.unit);
+      }
+    } else clearResult();
+  }
+
+  function handleAddExercise(name: string, load: CustomLoad) {
+    const res = addCustomExercise(name, load);
+    if (!res) return;
+    setCustomExercises([...res.list]);
+    handleExercise(res.exercise.id);
+  }
+
+  function handleDeleteExercise(id: string) {
+    setCustomExercises([...removeCustomExercise(id)]);
+    handleExercise(DEFAULT_EXERCISE_ID);
   }
 
   /**
@@ -269,6 +335,10 @@ export default function App() {
 
   /** Re-count after a setup change, without scanning the video again. */
   function rescore(nextMode: ArmMode, nextSide: Side | null) {
+    if (isManual) {
+      startManual(exercise, nextMode, nextSide);
+      return;
+    }
     const scan = scanRef.current;
     if (!result || !scan) return;
     if (saved) {
@@ -358,6 +428,7 @@ export default function App() {
       weight: w,
       unit,
       effort,
+      ...(isManual ? { manual: true } : {}),
     };
     let summary: SessionSummary;
     if (effectiveMode === 'both' && exercise.sided) {
@@ -420,6 +491,10 @@ export default function App() {
 
   function handleNewSet() {
     setIsSample(false);
+    if (isManual) {
+      startManual(exercise, effectiveMode, side);
+      return;
+    }
     clearResult();
     setVideoUrl(null);
     setVideoReady(false);
@@ -456,7 +531,7 @@ export default function App() {
   const target =
     suggestion || history.length > 0 || saved ? (
       <NextTarget
-        title={saved ? 'Next session' : 'Target'}
+        title={saved ? 'Next workout' : 'Target'}
         suggestion={suggestion}
         settings={settings}
         incrementUnit={incrementUnit}
@@ -525,7 +600,19 @@ export default function App() {
                   </button>
                 </Notice>
               )}
-              {!videoUrl && (
+              {isManual && (
+                <div className="mb-1">
+                  <h1 className="text-balance text-[28px] font-bold leading-tight tracking-tight sm:text-[34px]">
+                    Log {exercise.label}
+                  </h1>
+                  <p className="mt-1.5 max-w-xl text-[15px] text-ink-2">
+                    {exercise.manual
+                      ? 'You added this exercise, so it isn\u2019t counted from video. Enter your reps for each set; sets saved today make up one workout and set your next target.'
+                      : 'Enter your reps by hand for this set. Sets saved today make up one workout and set your next target.'}
+                  </p>
+                </div>
+              )}
+              {!isManual && !videoUrl && (
                 <div className="mb-1">
                   <h1 className="text-balance text-[28px] font-bold leading-tight tracking-tight sm:text-[34px]">
                     Count reps from your set
@@ -538,7 +625,7 @@ export default function App() {
                 </div>
               )}
 
-              <VideoStage
+              {!isManual && <VideoStage
                 videoUrl={videoUrl}
                 videoRef={videoRef}
                 tracksRef={tracksRef}
@@ -562,7 +649,7 @@ export default function App() {
                 }}
                 onLoadedMetadata={(v) => void handleLoadedMetadata(v)}
                 onDecodeError={() => setDecodeError(describeDecodeFailure(probeRef.current))}
-              />
+              />}
 
               {decodeError && (
                 <Notice tone="error">
@@ -586,7 +673,7 @@ export default function App() {
                 </Notice>
               )}
 
-              {!videoUrl && <FilmingTips tips={exercise.filmingTips} both={effectiveMode === 'both'} />}
+              {!isManual && !videoUrl && <FilmingTips tips={exercise.filmingTips} both={effectiveMode === 'both'} />}
             </div>
 
             <aside className="min-w-0 space-y-4 lg:sticky lg:top-20 lg:self-start">
@@ -610,6 +697,11 @@ export default function App() {
                 onCancel={() => abortRef.current?.abort()}
                 onReplace={() => replaceInputRef.current?.click()}
                 onRemove={handleRemoveVideo}
+                customExercises={customExercises}
+                onAddExercise={handleAddExercise}
+                onDeleteExercise={handleDeleteExercise}
+                manualEntry={isManual}
+                onManualEntry={handleManualEntry}
               />
 
               {result && !analyzing && (
@@ -631,6 +723,8 @@ export default function App() {
                   onUnit={setUnit}
                   effort={effort}
                   onEffort={setEffort}
+                  manual={isManual}
+                  todaySets={todaySets}
                   saved={saved}
                   onSave={handleSave}
                   onShare={() => void handleShare()}

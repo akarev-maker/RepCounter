@@ -55,10 +55,17 @@ secure page: `localhost`, or the site served over https.
    - Pull-up and lat pulldown: elbow angle with both arms, straight
      (≥ 140°), bent (≤ 90°), and back to straight.
 3. Each rep gets a timestamp you can click to jump to it in the video.
-4. The next-set target uses double progression: add reps within your range, and
-   add weight only after hitting the top of the range on two sets in a row.
-   The rep range (3–5, 6–10, 8–12, 12–20 or custom) and the other rules are
-   editable per exercise.
+4. Sets of an exercise saved on the same day are one workout. The next
+   workout's target uses that workout's sets at its heaviest weight (so
+   warm-ups don't count): every set at the top of your rep range adds weight;
+   inside the range, aim for one more rep on your weakest set; a set below the
+   range or marked Failed keeps the weight; and if even your best set was 3+
+   reps short of the range, the target drops one weight step. The rep range
+   (3–5, 6–10, 8–12, 12–20 or custom) and weight step are editable per
+   exercise.
+5. Any exercise can be logged by hand ("No video? Enter reps by hand"), and
+   **+ Add exercise** adds your own (name plus total, per-dumbbell or
+   bodyweight). Added exercises are logged by hand only.
 
 ## Supported
 

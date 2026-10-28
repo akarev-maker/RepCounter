@@ -2,6 +2,8 @@ import type { Effort, ProgressionSettings, RepEvent, Side, Unit } from '../types
 import type { OtherSideHint } from '../analysis/scoreFrames';
 import { armBalance } from '../counting/balance';
 import type { DepthWording, Limb } from '../exercises/registry';
+import type { SessionSummary } from '../types';
+import { formatLoad } from '../progression/progression';
 import { armColor } from '../analysis/drawOverlay';
 import { formatTime } from './formatTime';
 import { IconCheck, IconMinus, IconPlus } from './icons';
@@ -49,6 +51,10 @@ interface Props {
   effort: Effort | null;
   onEffort: (e: Effort) => void;
 
+  /** Reps typed in by hand (no video). */
+  manual: boolean;
+  /** Sets of this exercise (and arm) saved today, oldest first; includes this one once saved. */
+  todaySets: SessionSummary[];
   saved: boolean;
   onSave: () => void;
   /** Share an image of the saved set. */
@@ -82,16 +88,19 @@ export function ResultsPanel(p: Props) {
   return (
     <Card className="overflow-hidden">
       <div className="p-5">
-        <SectionLabel>Result</SectionLabel>
+        <div className="flex items-baseline justify-between gap-3">
+          <SectionLabel>{p.manual ? 'Your set' : 'Result'}</SectionLabel>
+          <SetsToday sets={p.saved ? p.todaySets.slice(0, -1) : p.todaySets} />
+        </div>
 
         {multi ? (
           <div className="mt-3 grid grid-cols-2 gap-3">
             {p.arms.map((arm, i) => (
-              <ArmCount key={arm.side ?? i} arm={arm} compact disabled={p.saved} onChange={(n) => p.onCountChange(i, n)} />
+              <ArmCount key={arm.side ?? i} arm={arm} compact manual={p.manual} disabled={p.saved} onChange={(n) => p.onCountChange(i, n)} />
             ))}
           </div>
         ) : (
-          p.arms[0] && <ArmCount arm={p.arms[0]} disabled={p.saved} onChange={(n) => p.onCountChange(0, n)} />
+          p.arms[0] && <ArmCount arm={p.arms[0]} manual={p.manual} disabled={p.saved} onChange={(n) => p.onCountChange(0, n)} />
         )}
 
         {balance && (
@@ -105,7 +114,7 @@ export function ResultsPanel(p: Props) {
           </div>
         )}
 
-        <p className="mt-4 text-[13px] text-ink-2">
+        {!p.manual && <p className="mt-4 text-[13px] text-ink-2">
           {multi ? (
             <>
               Pose found in{' '}
@@ -125,7 +134,7 @@ export function ResultsPanel(p: Props) {
               of analyzed frames. Check that the lines in the video sit on your {single}.
             </>
           )}
-        </p>
+        </p>}
 
         {p.hint && !p.saved && (
           <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-accent/30 bg-accent-soft px-3.5 py-3">
@@ -301,7 +310,7 @@ export function ResultsPanel(p: Props) {
               </p>
               <div className="flex gap-2">
                 <Button onClick={p.onShare}>Share</Button>
-                <Button onClick={p.onNewSet}>Analyze next set</Button>
+                <Button onClick={p.onNewSet}>{p.manual ? 'Log next set' : 'Analyze next set'}</Button>
               </div>
             </div>
           ) : (
@@ -332,14 +341,52 @@ function joinList(items: string[]): string {
   return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
 }
 
+/** "Set 3 today · earlier 12, 10 at 25 lb". */
+function SetsToday({ sets }: { sets: SessionSummary[] }) {
+  if (sets.length === 0) return <span className="text-xs font-semibold text-ink-3">Set 1 today</span>;
+  const sameLoad = sets.every((s) => s.weight === sets[0].weight && s.unit === sets[0].unit);
+  const list = sets.map((s) => (s.perArm ? `${s.perArm.right}·${s.perArm.left}` : String(s.reps))).join(', ');
+  return (
+    <span className="truncate text-xs text-ink-3">
+      <span className="font-semibold text-ink-2">Set {sets.length + 1} today</span>
+      {' · '}earlier {list}
+      {sameLoad ? ` at ${formatLoad(sets[0].weight, sets[0].unit)}` : ''}
+    </span>
+  );
+}
+
+/** Rep count typed directly (by-hand logging). */
+function RepInput({ value, onChange, disabled, label, big }: { value: number; onChange: (n: number) => void; disabled: boolean; label: string; big?: boolean }) {
+  return (
+    <input
+      type="number"
+      inputMode="numeric"
+      min={0}
+      max={999}
+      aria-label={label}
+      disabled={disabled}
+      value={value === 0 ? '' : value}
+      placeholder="0"
+      onChange={(e) => {
+        const n = Math.round(Number(e.target.value));
+        onChange(Number.isFinite(n) ? Math.min(999, Math.max(0, n)) : 0);
+      }}
+      onFocus={(e) => e.target.select()}
+      className={`${big ? 'h-16 w-28 text-5xl' : 'h-12 w-full text-4xl'} rounded-xl border border-line-strong bg-surface px-2 text-center font-bold tabular-nums tracking-tight outline-none placeholder:text-ink-3/50 focus:border-ink focus:ring-4 focus:ring-black/5 disabled:opacity-60`}
+    />
+  );
+}
+
 function ArmCount({
   arm,
   compact = false,
+  manual = false,
   disabled,
   onChange,
 }: {
   arm: ArmResultView;
   compact?: boolean;
+  manual?: boolean;
   disabled: boolean;
   onChange: (n: number) => void;
 }) {
@@ -354,8 +401,14 @@ function ArmCount({
           <span className="h-2 w-2 rounded-full" style={{ backgroundColor: armColor(arm.side).solid }} />
           {sideLabel(arm.side)} arm
         </p>
-        <p className="mt-1.5 text-5xl font-bold leading-none tracking-tight tabular-nums">{arm.count}</p>
-        <p className="mt-1.5 text-[11px] text-ink-3">{edited ? `Was ${arm.detected}` : 'Detected'}</p>
+        {manual ? (
+          <div className="mt-1.5">
+            <RepInput value={arm.count} onChange={onChange} disabled={disabled} label={`${sideLabel(arm.side)} arm reps`} />
+          </div>
+        ) : (
+          <p className="mt-1.5 text-5xl font-bold leading-none tracking-tight tabular-nums">{arm.count}</p>
+        )}
+        <p className="mt-1.5 text-[11px] text-ink-3">{manual ? 'Reps' : edited ? `Was ${arm.detected}` : 'Detected'}</p>
         <div className="mt-2.5 flex gap-1.5">
           <button
             type="button"
@@ -384,11 +437,15 @@ function ArmCount({
     <div className="mt-3 flex items-end justify-between gap-4">
       <div>
         <div className="flex items-baseline gap-2">
-          <span className="text-6xl font-bold leading-none tracking-tight tabular-nums">{arm.count}</span>
+          {manual ? (
+            <RepInput value={arm.count} onChange={onChange} disabled={disabled} label="Reps" big />
+          ) : (
+            <span className="text-6xl font-bold leading-none tracking-tight tabular-nums">{arm.count}</span>
+          )}
           <span className="text-lg font-semibold text-ink-2">reps</span>
         </div>
         <p className="mt-2 text-xs text-ink-3">
-          {edited ? `Corrected from ${arm.detected} detected` : 'Detected automatically'}
+          {manual ? 'Entered by hand' : edited ? `Corrected from ${arm.detected} detected` : 'Detected automatically'}
         </p>
       </div>
       <div className="flex gap-1.5" aria-label="Correct the count">

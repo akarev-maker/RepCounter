@@ -2,7 +2,7 @@
 
 Last updated: 2026-10-26. Separates what was actually run from what is assumed.
 
-## Automated unit tests (`npm test`, 97 passing)
+## Automated unit tests (`npm test`, 107 passing)
 
 `src/analysis/armExercises.test.ts`: synthetic poses for the lateral raise
 (counts only the working arm, ignores lifts to 45°, shows the real shoulder
@@ -345,6 +345,23 @@ undercount (no extra reps); the worst sets (−3) are from three people whose
 raises often stop short of 60°. Bench press was tried again on RepCount-A (near arm only, heavier
 smoothing) and still found only about two thirds of reps on the tuning
 clips, so it stays out.
+
+## Workouts, by-hand logging and added exercises (2026-10-28)
+
+Headless Chrome at 390×844:
+- Added "Bench Press" (total weight): heading "Log Bench Press", "By hand"
+  badge, no video area. Logged 10, 8, 6 at 135 lb with Log next set between:
+  the panel read "Set 2 today · earlier 10 at 135 lb", then "Set 3 today ·
+  earlier 10, 8 at 135 lb". Target: 135 lb × 7 ("3 sets (10, 8, 6 reps) …
+  below your 8–12 range").
+- Dumbbell Curl, "No video? Enter reps by hand", 3 reps at 25 lb: target
+  20 lb × 8 ("well below your 8–12 range. Drop to 20 lb").
+- History groups each day's sets per exercise ("Bench Press · 3 sets",
+  Set 1–3, "by hand"). The added exercise is still listed after a reload.
+- Video flow unchanged: QuickCurls_5 counts 5 and saves.
+
+Not verified on a phone. Old saved settings may contain the removed
+"successSetsRequired" field; it is ignored.
 
 ## In-browser recording (headless Chrome, fake camera)
 

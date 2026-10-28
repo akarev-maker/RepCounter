@@ -1,4 +1,5 @@
 import type { Side, Unit } from '../types';
+import { loadCustomExercises, type CustomExercise } from '../storage/customExercises';
 
 /**
  * MediaPipe Pose landmark indices.
@@ -47,6 +48,8 @@ export interface ExerciseDef {
   label: string;
   joint: Joint;
   limb: Limb;
+  /** Logged by hand only (user-added exercises); never counted from video. */
+  manual?: boolean;
   /**
    * Whether the user picks a side (left/right). Exercises that are not sided
    * use both sides of the body together: each frame is measured on the more
@@ -317,8 +320,45 @@ export const EXERCISES: Record<string, ExerciseDef> = {
 
 export const DEFAULT_EXERCISE_ID = 'dumbbell-curl';
 
+const LOAD_TEXT: Record<CustomExercise['load'], { weightNote: string; loadSuffix: string; bodyweight: boolean }> = {
+  total: { weightNote: 'total weight', loadSuffix: '', bodyweight: false },
+  'per-dumbbell': { weightNote: 'per dumbbell', loadSuffix: ' per dumbbell', bodyweight: false },
+  bodyweight: { weightNote: 'added weight, 0 for bodyweight', loadSuffix: ' added', bodyweight: true },
+};
+
+/** A user-added exercise as an ExerciseDef. The tracking fields are unused (it is manual). */
+export function customExerciseDef(c: CustomExercise): ExerciseDef {
+  const t = LOAD_TEXT[c.load];
+  return {
+    id: c.id,
+    label: c.label,
+    joint: 'elbow',
+    limb: 'arm',
+    manual: true,
+    sided: false,
+    measure: 'angle',
+    weightNote: t.weightNote,
+    loadSuffix: t.loadSuffix,
+    allowBodyweight: t.bodyweight,
+    framingAdvice: '',
+    filmingTips: [],
+    landmarks: { left: [0, 0, 0], right: [0, 0, 0] },
+    flexEnter: 0,
+    extendEnter: 0,
+    filmingHint: 'Added by you. Not counted from video: enter your reps by hand.',
+    defaults: { repRangeMin: 8, repRangeMax: 12, increment: c.load === 'per-dumbbell' ? 5 : 10, unit: 'lb' },
+  };
+}
+
+/** Built-in or user-added exercise, or undefined (e.g. a removed exercise in old History). */
+export function lookupExercise(id: string): ExerciseDef | undefined {
+  if (EXERCISES[id]) return EXERCISES[id];
+  const c = loadCustomExercises().find((x) => x.id === id);
+  return c ? customExerciseDef(c) : undefined;
+}
+
 export function getExercise(id: string): ExerciseDef {
-  return EXERCISES[id] ?? EXERCISES[DEFAULT_EXERCISE_ID];
+  return lookupExercise(id) ?? EXERCISES[DEFAULT_EXERCISE_ID];
 }
 
 /** Landmark triplet for the chosen side (falls back to left if not sided). */
