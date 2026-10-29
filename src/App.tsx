@@ -2,10 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DEFAULT_EXERCISE_ID, getExercise, type ExerciseDef } from './exercises/registry';
 import { analyzeVideo } from './analysis/analyzeVideo';
 import { otherSideHint, scoreFrames, type OtherSideHint } from './analysis/scoreFrames';
-import { armColor } from './analysis/drawOverlay';
+import { SHALLOW_COLOR, armColor } from './analysis/drawOverlay';
 import { bothArmSave } from './counting/balance';
 import { getPoseLandmarker } from './pose/poseLandmarker';
-import { dayOf, suggestNext } from './progression/progression';
+import { dayOf, parseWeight, suggestNext, workingSets } from './progression/progression';
 import {
   addCustomExercise,
   loadCustomExercises,
@@ -80,8 +80,6 @@ interface ScanState {
 }
 
 const METADATA_TIMEOUT_MS = 12_000;
-/** Timeline and chip color for reps that were counted but could go deeper. */
-const SHALLOW_COLOR = '#f59e0b';
 /** Below this tracked fraction (best arm), the count is called unreliable. */
 const UNRELIABLE_TRACKING = 0.3;
 
@@ -113,6 +111,8 @@ export default function App() {
   const [videoReady, setVideoReady] = useState(false);
   const [decodeError, setDecodeError] = useState<string | null>(null);
   const probeRef = useRef<VideoProbe | null>(null);
+  /** Bumped whenever the clip changes, so slow async work for an older clip is ignored. */
+  const clipGenRef = useRef(0);
   /** Whether the current (or last) clip was recorded here; the next set then opens the camera. */
   const [recorded, setRecorded] = useState(false);
   /** The built-in sample clip is loaded. It is counted as soon as it can be. */
@@ -128,8 +128,8 @@ export default function App() {
   const [side, setSide] = useState<Side | null>('right');
   const [mode, setMode] = useState<ArmMode>('one');
   const [customExercises, setCustomExercises] = useState<CustomExercise[]>(() => loadCustomExercises());
-  // customExercises is a dependency because getExercise reads the custom list.
-  const exercise = useMemo(() => getExercise(exerciseId), [exerciseId, customExercises]);
+  // Cheap lookup. Recomputed each render, so an added or renamed custom exercise shows at once.
+  const exercise = getExercise(exerciseId);
   /** Logging by hand: always for user-added exercises, or when chosen for a tracked one. */
   const [manualChosen, setManualChosen] = useState(false);
   const isManual = !!exercise.manual || manualChosen;
@@ -168,7 +168,20 @@ export default function App() {
       });
   }, []);
 
-  useEffect(() => loadModel(), [loadModel]);
+  // First load on mount. State already starts as 'loading'; loadModel is for Retry.
+  useEffect(() => {
+    let live = true;
+    getPoseLandmarker()
+      .then(() => live && setModelState('ready'))
+      .catch((e: Error) => {
+        if (!live) return;
+        setModelState('error');
+        setModelError(e.message);
+      });
+    return () => {
+      live = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!toast) return;
@@ -206,6 +219,7 @@ export default function App() {
     [history],
   );
   const suggestion = useMemo(() => suggestNext(history, settings), [history, settings]);
+  const basis = useMemo(() => workingSets(history), [history]);
   // Recomputed on every render so a workout that crosses midnight starts a new day.
   const today = dayOf(new Date().toISOString());
   const todaySets = history
@@ -228,9 +242,11 @@ export default function App() {
     setDecodeError(null);
     setVideoReady(false);
     probeRef.current = null;
+    const gen = ++clipGenRef.current;
     setTab('analyze');
     setVideoUrl(URL.createObjectURL(file));
-    probeRef.current = await probeVideoFile(file);
+    const probe = await probeVideoFile(file);
+    if (gen === clipGenRef.current) probeRef.current = probe;
   }
 
   async function handleLoadedMetadata(v: HTMLVideoElement) {
@@ -240,7 +256,9 @@ export default function App() {
       return;
     }
     // In-browser recordings often have no duration in the header.
+    const gen = clipGenRef.current;
     await ensureFiniteDuration(v);
+    if (gen !== clipGenRef.current) return;
     if (!Number.isFinite(v.duration) || v.duration <= 0) {
       setDecodeError('This browser couldn\u2019t read the length of the clip. Try recording again, or upload a video.');
       return;
@@ -385,6 +403,7 @@ export default function App() {
           setProgress(p);
         },
       });
+      if (controller.signal.aborted) return;
       const scan: ScanState = { poseFrames: res.poseFrames, aspect: res.aspect, stepMs: res.stepMs };
       scanRef.current = scan;
       applyScan(scan, effectiveMode, side);
@@ -397,8 +416,11 @@ export default function App() {
       if ((e as Error).name !== 'AbortError') setAnalysisError((e as Error).message);
       if (videoRef.current) videoRef.current.currentTime = 0;
     } finally {
-      setAnalyzing(false);
-      abortRef.current = null;
+      // Only the latest run owns the shared state.
+      if (abortRef.current === controller) {
+        setAnalyzing(false);
+        abortRef.current = null;
+      }
     }
   }
 
@@ -418,8 +440,8 @@ export default function App() {
   }
 
   function handleSave() {
-    if (!effort || saved || !result) return;
-    const w = Number(weight);
+    const w = parseWeight(weight, exercise.allowBodyweight);
+    if (!effort || saved || !result || w === null) return;
     const base = {
       id: newId(),
       dateISO: new Date().toISOString(),
@@ -458,10 +480,13 @@ export default function App() {
 
   /** Load the sample squat clip (Pexels 9001924, 3 squats) and count it. */
   async function handleSample() {
+    const gen = clipGenRef.current;
     try {
       const res = await fetch(`${import.meta.env.BASE_URL}samples/squat-side.mp4`);
       if (!res.ok) throw new Error(String(res.status));
       const file = new File([await res.blob()], 'sample-squats.mp4', { type: 'video/mp4' });
+      // The user picked or recorded their own clip while the sample downloaded.
+      if (gen !== clipGenRef.current) return;
       handleExercise('squat');
       setRecorded(false);
       setIsSample(true);
@@ -496,6 +521,7 @@ export default function App() {
       return;
     }
     clearResult();
+    clipGenRef.current++;
     setVideoUrl(null);
     setVideoReady(false);
     setDecodeError(null);
@@ -528,16 +554,47 @@ export default function App() {
   const armViews: ArmResultView[] =
     result?.arms.map((a, i) => ({ ...a, count: counts[i] ?? a.detected })) ?? [];
 
-  const target =
+  const target = (chart = false) =>
     suggestion || history.length > 0 || saved ? (
       <NextTarget
         title={saved ? 'Next workout' : 'Target'}
         suggestion={suggestion}
+        basis={basis}
+        chart={chart}
         settings={settings}
         incrementUnit={incrementUnit}
         onSettings={handleSettings}
       />
     ) : null;
+
+  const setupPanel = (
+    <SetupPanel
+      exerciseId={exerciseId}
+      onExercise={handleExercise}
+      mode={effectiveMode}
+      onMode={handleMode}
+      side={side}
+      onSide={handleSide}
+      hasVideo={!!videoUrl && !decodeError}
+      videoFailed={!!videoUrl && !!decodeError}
+      videoReady={videoReady && !decodeError}
+      hasResult={!!result}
+      analyzing={analyzing}
+      progress={progress}
+      modelState={modelState}
+      modelError={modelError}
+      onRetryModel={loadModel}
+      onAnalyze={handleAnalyze}
+      onCancel={() => abortRef.current?.abort()}
+      onReplace={() => replaceInputRef.current?.click()}
+      onRemove={handleRemoveVideo}
+      customExercises={customExercises}
+      onAddExercise={handleAddExercise}
+      onDeleteExercise={handleDeleteExercise}
+      manualEntry={isManual}
+      onManualEntry={handleManualEntry}
+    />
+  );
 
   return (
     <div className="min-h-svh">
@@ -545,9 +602,9 @@ export default function App() {
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
           <button type="button" onClick={() => setTab('analyze')} className="flex items-center gap-2.5">
             <Logo />
-            <span className="text-[15px] font-bold tracking-tight">RepCounter</span>
+            <span className="text-[14px] font-bold uppercase tracking-[0.14em]">RepCounter</span>
           </button>
-          <nav className="flex rounded-xl bg-black/[0.05] p-1" aria-label="Sections">
+          <nav className="flex rounded-full border border-line-strong p-[3px]" aria-label="Sections">
             {(
               [
                 ['analyze', 'Analyze'],
@@ -558,16 +615,16 @@ export default function App() {
                 key={id}
                 type="button"
                 onClick={() => setTab(id)}
+                // Leaving Analyze mid-scan would unmount the video being scanned.
+                disabled={analyzing && id !== tab}
                 aria-current={tab === id ? 'page' : undefined}
-                className={`h-8 rounded-lg px-3.5 text-[13px] font-semibold transition ${
-                  tab === id
-                    ? 'bg-surface text-ink shadow-[0_1px_2px_rgba(0,0,0,0.08),0_0_0_1px_rgba(0,0,0,0.04)]'
-                    : 'text-ink-2 hover:text-ink'
+                className={`h-8 rounded-full px-3.5 text-[13px] font-medium transition disabled:opacity-40 ${
+                  tab === id ? 'bg-ink text-cream' : 'text-ink-2 hover:text-ink'
                 }`}
               >
                 {label}
                 {id === 'history' && sessions.length > 0 && (
-                  <span className="ml-1.5 tabular-nums text-ink-3">{sessions.length}</span>
+                  <span className="ml-1.5 tabular-nums opacity-55">{sessions.length}</span>
                 )}
               </button>
             ))}
@@ -601,23 +658,26 @@ export default function App() {
                 </Notice>
               )}
               {isManual && (
-                <div className="mb-1">
-                  <h1 className="text-balance text-[28px] font-bold leading-tight tracking-tight sm:text-[34px]">
+                <div className="mb-3">
+                  <h1 className="display-caps text-balance text-[32px] leading-[1.08] sm:text-[48px]">
                     Log {exercise.label}
                   </h1>
-                  <p className="mt-1.5 max-w-xl text-[15px] text-ink-2">
+                  <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-ink-2">
                     {exercise.manual
                       ? 'You added this exercise, so it isn\u2019t counted from video. Enter your reps for each set; sets saved today make up one workout and set your next target.'
                       : 'Enter your reps by hand for this set. Sets saved today make up one workout and set your next target.'}
                   </p>
                 </div>
               )}
+              {/* By hand there is no video, so set up moves here and the right column holds the set. */}
+              {isManual && setupPanel}
+              {isManual && target()}
               {!isManual && !videoUrl && (
-                <div className="mb-1">
-                  <h1 className="text-balance text-[28px] font-bold leading-tight tracking-tight sm:text-[34px]">
+                <div className="mb-3">
+                  <h1 className="display-caps text-balance text-[34px] leading-[1.08] sm:text-[54px]">
                     Count reps from your set
                   </h1>
-                  <p className="mt-1.5 max-w-xl text-[15px] text-ink-2">
+                  <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-ink-2">
                     Record a set right here or upload a clip. Pose tracking runs in your browser and
                     counts each full rep of curls, squats, lateral raises, pull-ups and lat pulldowns.
                     You confirm the numbers before anything is saved.
@@ -677,32 +737,7 @@ export default function App() {
             </div>
 
             <aside className="min-w-0 space-y-4 lg:sticky lg:top-20 lg:self-start">
-              <SetupPanel
-                exerciseId={exerciseId}
-                onExercise={handleExercise}
-                mode={effectiveMode}
-                onMode={handleMode}
-                side={side}
-                onSide={handleSide}
-                hasVideo={!!videoUrl && !decodeError}
-                videoFailed={!!videoUrl && !!decodeError}
-                videoReady={videoReady && !decodeError}
-                hasResult={!!result}
-                analyzing={analyzing}
-                progress={progress}
-                modelState={modelState}
-                modelError={modelError}
-                onRetryModel={loadModel}
-                onAnalyze={handleAnalyze}
-                onCancel={() => abortRef.current?.abort()}
-                onReplace={() => replaceInputRef.current?.click()}
-                onRemove={handleRemoveVideo}
-                customExercises={customExercises}
-                onAddExercise={handleAddExercise}
-                onDeleteExercise={handleDeleteExercise}
-                manualEntry={isManual}
-                onManualEntry={handleManualEntry}
-              />
+              {!isManual && setupPanel}
 
               {result && !analyzing && (
                 <ResultsPanel
@@ -732,17 +767,17 @@ export default function App() {
                 />
               )}
 
-              {target}
+              {!isManual && target()}
               <InstallHint show={saved || sessions.length > 0} inApp={!!inApp} />
             </aside>
           </div>
         ) : (
           <div className="mx-auto max-w-2xl space-y-4">
             <div>
-              <h1 className="text-[28px] font-bold tracking-tight">History</h1>
-              <p className="mt-1 text-[15px] text-ink-2">Saved set summaries. Videos are never stored.</p>
+              <h1 className="display-caps text-[34px] leading-[1.08] sm:text-[48px]">History</h1>
+              <p className="mt-3 text-[15px] text-ink-2">Saved set summaries. Videos are never stored.</p>
             </div>
-            {target}
+            {target(true)}
             <HistoryView
               sessions={sessions}
               onDelete={(id) => setSessions(deleteSession(id))}
@@ -773,7 +808,7 @@ export default function App() {
       {toast && (
         <div
           role="status"
-          className="toast-in fixed bottom-6 left-1/2 z-40 -translate-x-1/2 rounded-full bg-ink px-4 py-2.5 text-sm font-semibold text-white shadow-lg"
+          className="toast-in fixed bottom-6 left-1/2 z-40 -translate-x-1/2 rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-cream shadow-lg"
         >
           {toast}
         </div>
@@ -784,9 +819,9 @@ export default function App() {
 
 function Logo() {
   return (
-    <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-ink text-white">
+    <span className="flex h-8 w-8 items-center justify-center rounded-[9px] bg-ink text-cream">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M5 16.5l4.5-6 4 3.5L19 6.5" stroke="#ff5a1f" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M5 16.5l4.5-6 4 3.5L19 6.5" stroke="#c9b28c" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
         <circle cx="9.5" cy="10.5" r="1.6" fill="currentColor" />
         <circle cx="13.5" cy="14" r="1.6" fill="currentColor" />
       </svg>
@@ -808,11 +843,11 @@ function FilmingTips({ tips: base, both }: { tips: { t: string; d: string }[]; b
       <ul className="mt-3 grid gap-4 sm:grid-cols-3">
         {tips.map((x, i) => (
           <li key={x.t} className="flex gap-3">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-canvas text-xs font-bold tabular-nums text-ink-2">
+            <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full border border-line font-display text-[15px] tabular-nums text-ink-2">
               {i + 1}
             </span>
             <div>
-              <p className="text-sm font-semibold">{x.t}</p>
+              <p className="text-sm font-medium">{x.t}</p>
               <p className="mt-0.5 text-[13px] leading-relaxed text-ink-2">{x.d}</p>
             </div>
           </li>

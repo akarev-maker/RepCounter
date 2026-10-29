@@ -233,7 +233,8 @@ async function connect(port) {
     const p = msg.id && pending.get(msg.id);
     if (!p) return;
     pending.delete(msg.id);
-    msg.error ? p.rej(new Error(msg.error.message)) : p.res(msg.result);
+    if (msg.error) p.rej(new Error(msg.error.message));
+    else p.res(msg.result);
   };
   const send = (method, params = {}) =>
     new Promise((res, rej) => {

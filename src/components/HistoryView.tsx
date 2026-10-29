@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import type { SessionSummary } from '../types';
-import { EFFORTS } from './ResultsPanel';
+import { EFFORTS } from './efforts';
 import { lookupExercise } from '../exercises/registry';
-import { formatLoad } from '../progression/progression';
+import { dayOf, formatLoad } from '../progression/progression';
 import { IconTrash } from './icons';
 import { Button, Card, SectionLabel } from './ui';
 
@@ -16,19 +16,16 @@ interface Props {
 const effortLabel = (e: string) => EFFORTS.find((x) => x.value === e)?.label ?? e;
 
 const EFFORT_DOT: Record<string, string> = {
-  easy: 'bg-emerald-500',
+  easy: 'bg-green-500',
   'just-right': 'bg-sky-500',
   hard: 'bg-amber-500',
   failed: 'bg-red-500',
 };
 
-function dayKey(iso: string) {
-  const d = new Date(iso);
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString();
-}
-
+/** "2026-10-28" (local day, same rule as progression) as local midnight. */
 function dayLabel(key: string) {
-  const d = new Date(key);
+  const [y, m, day] = key.split('-').map(Number);
+  const d = new Date(y, m - 1, day);
   const today = new Date();
   const startToday = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
   const diff = Math.round((startToday - d.getTime()) / 86_400_000);
@@ -43,7 +40,7 @@ export function HistoryView({ sessions, onDelete, onClear, onStart }: Props) {
   if (sessions.length === 0) {
     return (
       <Card className="flex flex-col items-center px-6 py-14 text-center">
-        <p className="text-lg font-semibold">No sets saved yet</p>
+        <p className="display-caps text-[24px]">No sets saved yet</p>
         <p className="mt-1.5 max-w-sm text-sm text-ink-2">
           Count a clip or enter reps by hand, then save it. Sets saved on the same day are one
           workout and set your next target.
@@ -58,7 +55,7 @@ export function HistoryView({ sessions, onDelete, onClear, onStart }: Props) {
   // Day -> workouts (one per exercise and arm setup) -> sets, oldest set first.
   const groups = new Map<string, Map<string, SessionSummary[]>>();
   for (const s of [...sessions].sort((a, b) => Date.parse(a.dateISO) - Date.parse(b.dateISO))) {
-    const k = dayKey(s.dateISO);
+    const k = dayOf(s.dateISO);
     const w = `${s.exerciseId}|${s.mode ?? 'one'}|${s.perArm ? '' : (s.side ?? '')}`;
     const day = groups.get(k) ?? new Map<string, SessionSummary[]>();
     day.set(w, [...(day.get(w) ?? []), s]);
@@ -105,12 +102,12 @@ export function HistoryView({ sessions, onDelete, onClear, onStart }: Props) {
 
       {days.map(([k, workouts]) => (
         <div key={k}>
-          <p className="bg-canvas/60 px-5 py-2 text-xs font-semibold text-ink-3">{dayLabel(k)}</p>
+          <p className="border-t border-line bg-inset px-5 py-2 font-display text-[14px] italic text-ink-2">{dayLabel(k)}</p>
           {workouts.map((sets) => {
             const first = sets[0];
             return (
               <div key={first.id} className="border-t border-line first:border-t-0">
-                <p className="truncate px-5 pt-3 text-sm font-semibold">
+                <p className="truncate px-5 pt-3 text-sm font-medium">
                   {first.exerciseLabel}
                   {first.perArm ? (
                     <span className="font-normal text-ink-3"> · both arms</span>
@@ -126,7 +123,7 @@ export function HistoryView({ sessions, onDelete, onClear, onStart }: Props) {
                   {sets.map((s, i) => (
                     <li key={s.id} className="flex items-center gap-3 px-5 py-1.5">
                       <span className="w-11 shrink-0 text-xs font-semibold text-ink-3">Set {i + 1}</span>
-                      <span className="w-16 shrink-0 text-lg font-bold leading-none tabular-nums">
+                      <span className="num-display w-16 shrink-0 text-[22px] leading-none">
                         {s.perArm ? (
                           <>
                             {s.perArm.right}
@@ -136,7 +133,7 @@ export function HistoryView({ sessions, onDelete, onClear, onStart }: Props) {
                         ) : (
                           s.reps
                         )}
-                        <span className="ml-1 text-[11px] font-medium text-ink-3">{s.perArm ? 'R·L' : 'reps'}</span>
+                        <span className="ml-1 font-sans text-[11px] font-medium tracking-normal text-ink-3">{s.perArm ? 'R·L' : 'reps'}</span>
                       </span>
                       <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 text-[13px] text-ink-2">
                         <span className="tabular-nums">

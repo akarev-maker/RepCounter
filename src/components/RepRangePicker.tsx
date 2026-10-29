@@ -2,10 +2,10 @@ import { useState } from 'react';
 import type { ProgressionSettings } from '../types';
 
 /** Common rep ranges. Any range can be entered with Custom. */
-export const REP_RANGE_PRESETS: { min: number; max: number; label: string }[] = [
+const REP_RANGE_PRESETS: { min: number; max: number; label: string }[] = [
   { min: 3, max: 5, label: 'Strength' },
-  { min: 6, max: 10, label: 'Strength + size' },
-  { min: 8, max: 12, label: 'Size' },
+  { min: 5, max: 8, label: 'Strength + size' },
+  { min: 5, max: 12, label: 'Wide range' },
   { min: 12, max: 20, label: 'Endurance' },
 ];
 
@@ -32,8 +32,8 @@ export function RepRangePicker({ settings, onSettings, disabled }: Props) {
   };
 
   const chip = (active: boolean) =>
-    `flex h-9 items-center justify-center rounded-lg border px-2 text-[13px] font-semibold tabular-nums transition disabled:opacity-50 ${
-      active ? 'border-ink bg-ink text-white' : 'border-line-strong bg-surface text-ink-2 hover:border-ink-3'
+    `flex h-9 items-center justify-center rounded-full border px-2 text-[13px] font-medium tabular-nums transition disabled:opacity-50 ${
+      active ? 'border-ink bg-ink text-cream' : 'border-line-strong bg-transparent text-ink-2 hover:border-ink-3'
     }`;
 
   return (
@@ -80,7 +80,7 @@ export function RepRangePicker({ settings, onSettings, disabled }: Props) {
         </div>
       ) : (
         <p className="mt-2 text-xs text-ink-3">
-          {preset?.label}. Weight goes up once you reach {max} reps.
+          {preset?.label}. Add reps first; weight goes up once your best set reaches {max}.
         </p>
       )}
     </div>
@@ -115,7 +115,7 @@ function RangeInput({
       onKeyDown={(e) => {
         if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
       }}
-      className="h-9 w-16 rounded-lg border border-line-strong bg-surface px-2.5 text-center text-sm font-semibold tabular-nums text-ink outline-none focus:border-ink focus:ring-4 focus:ring-black/5"
+      className="h-9 w-16 rounded-xl border border-line-strong bg-[#fffdf9] px-2.5 text-center text-sm font-semibold tabular-nums text-ink outline-none focus:border-ink focus:ring-4 focus:ring-black/5"
     />
   );
 }

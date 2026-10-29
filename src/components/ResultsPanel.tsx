@@ -3,10 +3,11 @@ import type { OtherSideHint } from '../analysis/scoreFrames';
 import { armBalance } from '../counting/balance';
 import type { DepthWording, Limb } from '../exercises/registry';
 import type { SessionSummary } from '../types';
-import { formatLoad } from '../progression/progression';
-import { armColor } from '../analysis/drawOverlay';
+import { formatLoad, parseWeight } from '../progression/progression';
+import { SHALLOW_COLOR, armColor } from '../analysis/drawOverlay';
 import { formatTime } from './formatTime';
 import { IconCheck, IconMinus, IconPlus } from './icons';
+import { EFFORTS } from './efforts';
 import { Button, Card, Notice, SectionLabel, Segmented } from './ui';
 import { RepRangePicker } from './RepRangePicker';
 
@@ -21,13 +22,6 @@ export interface ArmResultView {
 }
 
 const sideLabel = (s: Side | null) => (s === 'left' ? 'Left' : s === 'right' ? 'Right' : 'Reps');
-
-export const EFFORTS: { value: Effort; label: string; hint: string }[] = [
-  { value: 'easy', label: 'Easy', hint: 'Several reps left' },
-  { value: 'just-right', label: 'Just right', hint: 'One or two left' },
-  { value: 'hard', label: 'Hard', hint: 'Last rep was a grind' },
-  { value: 'failed', label: 'Failed', hint: 'Couldn\u2019t finish a rep' },
-];
 
 interface Props {
   arms: ArmResultView[];
@@ -64,9 +58,7 @@ interface Props {
 
 export function ResultsPanel(p: Props) {
   const multi = p.arms.length > 1;
-  const weightNum = Number(p.weight);
-  const weightOk =
-    p.weight.trim() !== '' && Number.isFinite(weightNum) && (weightNum > 0 || (p.allowBodyweight && weightNum === 0));
+  const weightOk = parseWeight(p.weight, p.allowBodyweight) !== null;
   const single = p.limb === 'leg' ? 'legs' : p.limb;
   const missing = [!weightOk && 'weight', !p.effort && 'effort'].filter(Boolean);
 
@@ -106,7 +98,7 @@ export function ResultsPanel(p: Props) {
         {balance && (
           <div
             className={`mt-3 rounded-xl border px-3.5 py-3 text-[13px] leading-snug ${
-              balance.tone === 'even' ? 'border-line bg-canvas text-ink-2' : 'border-accent/30 bg-accent-soft text-ink'
+              balance.tone === 'even' ? 'border-line bg-inset text-ink-2' : 'border-[#e2d1b3] bg-accent-soft text-ink'
             }`}
           >
             {balance.tone === 'uneven' && <span className="font-semibold">Uneven set. </span>}
@@ -137,7 +129,7 @@ export function ResultsPanel(p: Props) {
         </p>}
 
         {p.hint && !p.saved && (
-          <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-accent/30 bg-accent-soft px-3.5 py-3">
+          <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-[#e2d1b3] bg-accent-soft px-3.5 py-3">
             <p className="text-[13px] leading-snug text-ink">
               {p.hint.kind === 'switch' ? (
                 <>
@@ -170,7 +162,7 @@ export function ResultsPanel(p: Props) {
         {p.depth && allReps.length > 0 && (
           <div
             className={`mt-3 rounded-xl border px-3.5 py-3 text-[13px] leading-snug ${
-              shallowReps.length ? 'border-amber-200 bg-amber-50 text-amber-950' : 'border-emerald-200 bg-emerald-50 text-emerald-900'
+              shallowReps.length ? 'border-amber-200 bg-amber-50 text-amber-950' : 'border-[#cdd8c8] bg-[#e7ece4] text-[#33452f]'
             }`}
           >
             {shallowReps.length === 0 ? (
@@ -210,11 +202,11 @@ export function ResultsPanel(p: Props) {
                         title={`${multi ? `${sideLabel(arm.side)} rep` : 'Rep'} ${r.index}: ${formatTime(r.startMs)} to ${formatTime(r.tsMs)}${
                           p.depth ? `, ${p.depth.format(r.bottomAngle)}${p.depth.suffix}${r.shallow ? ` (could ${p.depth.cue})` : ''}` : ''
                         }`}
-                        className="group inline-flex h-8 items-center gap-1.5 rounded-lg bg-canvas pl-1.5 pr-2.5 text-[13px] font-medium text-ink-2 transition hover:bg-ink hover:text-white"
+                        className="group inline-flex h-8 items-center gap-1.5 rounded-[10px] border border-line bg-inset pl-1.5 pr-2.5 text-[13px] font-medium text-ink-2 transition hover:border-ink hover:bg-ink hover:text-cream"
                       >
                         <span
                           className="flex h-5 min-w-5 items-center justify-center rounded-md px-1 text-[11px] font-bold tabular-nums text-white"
-                          style={{ backgroundColor: r.shallow ? '#f59e0b' : multi ? armColor(arm.side).solid : '#121211' }}
+                          style={{ backgroundColor: r.shallow ? SHALLOW_COLOR : multi ? armColor(arm.side).solid : '#1d1d1b' }}
                         >
                           {r.index}
                         </span>
@@ -234,10 +226,10 @@ export function ResultsPanel(p: Props) {
         )}
       </div>
 
-      <div className="border-t border-line bg-canvas/50 p-5">
+      <div className="border-t border-line bg-inset p-5">
         <SectionLabel>Log this set</SectionLabel>
 
-        <fieldset disabled={p.saved} className="mt-3 space-y-4 disabled:opacity-60">
+        <fieldset disabled={p.saved} className="mt-3 min-w-0 space-y-4 disabled:opacity-60">
           <div>
             <label htmlFor="weight" className="mb-2 flex items-baseline justify-between text-sm font-medium">
               Weight
@@ -253,7 +245,7 @@ export function ResultsPanel(p: Props) {
                 value={p.weight}
                 onChange={(e) => p.onWeight(e.target.value)}
                 placeholder={p.allowBodyweight ? 'e.g. 95, or 0' : 'e.g. 25'}
-                className="h-11 min-w-0 flex-1 rounded-xl border border-line-strong bg-surface px-3.5 text-[15px] font-semibold tabular-nums outline-none transition placeholder:font-normal placeholder:text-ink-3 focus:border-ink focus:ring-4 focus:ring-black/5"
+                className="h-11 min-w-0 flex-1 rounded-xl border border-line-strong bg-[#fffdf9] px-3.5 text-[15px] font-semibold tabular-nums outline-none transition placeholder:font-normal placeholder:text-ink-3 focus:border-ink focus:ring-4 focus:ring-black/5"
               />
               <div className="w-28 shrink-0">
                 <Segmented<Unit>
@@ -287,14 +279,14 @@ export function ResultsPanel(p: Props) {
                     type="button"
                     onClick={() => p.onEffort(e.value)}
                     aria-pressed={active}
-                    className={`rounded-xl border px-3 py-2.5 text-left transition ${
+                    className={`rounded-[14px] border px-3 py-2.5 text-left transition ${
                       active
-                        ? 'border-ink bg-ink text-white'
-                        : 'border-line-strong bg-surface hover:border-ink-3'
+                        ? 'border-ink bg-ink text-cream'
+                        : 'border-line-strong bg-transparent hover:border-ink-3'
                     }`}
                   >
-                    <span className="block text-sm font-semibold">{e.label}</span>
-                    <span className={`block text-xs ${active ? 'text-white/70' : 'text-ink-3'}`}>{e.hint}</span>
+                    <span className="block text-sm font-medium">{e.label}</span>
+                    <span className={`block text-xs ${active ? 'text-cream/70' : 'text-ink-3'}`}>{e.hint}</span>
                   </button>
                 );
               })}
@@ -305,7 +297,7 @@ export function ResultsPanel(p: Props) {
         <div className="mt-5">
           {p.saved ? (
             <div className="flex items-center justify-between gap-3">
-              <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-700">
+              <p className="inline-flex items-center gap-1.5 text-sm font-medium text-[#3d5a38]">
                 <IconCheck size={16} /> Saved to history
               </p>
               <div className="flex gap-2">
@@ -372,7 +364,7 @@ function RepInput({ value, onChange, disabled, label, big }: { value: number; on
         onChange(Number.isFinite(n) ? Math.min(999, Math.max(0, n)) : 0);
       }}
       onFocus={(e) => e.target.select()}
-      className={`${big ? 'h-16 w-28 text-5xl' : 'h-12 w-full text-4xl'} rounded-xl border border-line-strong bg-surface px-2 text-center font-bold tabular-nums tracking-tight outline-none placeholder:text-ink-3/50 focus:border-ink focus:ring-4 focus:ring-black/5 disabled:opacity-60`}
+      className={`${big ? 'h-[76px] w-32 text-[60px]' : 'h-14 w-full text-[40px]'} num-display rounded-xl border border-line-strong bg-[#fffdf9] px-2 text-center outline-none placeholder:text-ink-3/50 focus:border-ink focus:ring-4 focus:ring-black/5 disabled:opacity-60`}
     />
   );
 }
@@ -392,11 +384,11 @@ function ArmCount({
 }) {
   const edited = arm.count !== arm.detected;
   const stepBtn =
-    'flex items-center justify-center rounded-xl border border-line-strong text-ink transition hover:border-ink-3 disabled:opacity-40';
+    'flex items-center justify-center rounded-full border border-line-strong text-ink transition hover:border-ink-3 disabled:opacity-40';
 
   if (compact) {
     return (
-      <div className="rounded-xl border border-line p-3">
+      <div className="rounded-xl border border-line bg-inset p-3">
         <p className="flex items-center gap-1.5 text-xs font-semibold text-ink-2">
           <span className="h-2 w-2 rounded-full" style={{ backgroundColor: armColor(arm.side).solid }} />
           {sideLabel(arm.side)} arm
@@ -406,7 +398,7 @@ function ArmCount({
             <RepInput value={arm.count} onChange={onChange} disabled={disabled} label={`${sideLabel(arm.side)} arm reps`} />
           </div>
         ) : (
-          <p className="mt-1.5 text-5xl font-bold leading-none tracking-tight tabular-nums">{arm.count}</p>
+          <p className="num-display mt-1.5 text-[56px] leading-none">{arm.count}</p>
         )}
         <p className="mt-1.5 text-[11px] text-ink-3">{manual ? 'Reps' : edited ? `Was ${arm.detected}` : 'Detected'}</p>
         <div className="mt-2.5 flex gap-1.5">
@@ -440,9 +432,9 @@ function ArmCount({
           {manual ? (
             <RepInput value={arm.count} onChange={onChange} disabled={disabled} label="Reps" big />
           ) : (
-            <span className="text-6xl font-bold leading-none tracking-tight tabular-nums">{arm.count}</span>
+            <span className="num-display text-[84px] leading-[0.9]">{arm.count}</span>
           )}
-          <span className="text-lg font-semibold text-ink-2">reps</span>
+          <span className="font-display text-[22px] font-light italic text-ink-2">reps</span>
         </div>
         <p className="mt-2 text-xs text-ink-3">
           {manual ? 'Entered by hand' : edited ? `Corrected from ${arm.detected} detected` : 'Detected automatically'}

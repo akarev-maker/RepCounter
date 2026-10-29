@@ -223,7 +223,7 @@ export function CameraStage({ onRecorded, onClose }: Props) {
 
           {phase === 'countdown' && remaining > 0 && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30">
-              <span key={remaining} className="text-8xl font-bold tabular-nums text-white drop-shadow-lg">
+              <span key={remaining} className="num-display text-[120px] leading-none text-white drop-shadow-lg">
                 {remaining}
               </span>
               <p className="mt-2 text-sm font-medium text-white/80">Get into position</p>
@@ -242,7 +242,7 @@ export function CameraStage({ onRecorded, onClose }: Props) {
               <button
                 type="button"
                 onClick={onClose}
-                className="mt-5 inline-flex h-10 items-center rounded-xl bg-white px-4 text-sm font-semibold text-ink"
+                className="mt-5 inline-flex h-10 items-center rounded-full bg-cream px-5 text-sm font-medium text-ink"
               >
                 Back
               </button>

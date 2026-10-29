@@ -16,10 +16,18 @@ export function shareCardLines(s: SessionSummary): { count: string; unit: string
 
 const W = 1080;
 const H = 1920;
+const SANS = "'Geist Variable', system-ui, sans-serif";
+const SERIF = "'Newsreader Variable', Georgia, serif";
+const CREAM = '#f1ede6';
+const INK = '#1d1d1b';
 
 /** A 1080x1920 (story-sized) PNG of the set, counted by RepCounter. */
 export async function renderShareCard(s: SessionSummary, siteLabel: string): Promise<Blob> {
-  await Promise.all([800, 600, 400].map((w) => document.fonts.load(`${w} 64px Inter`)));
+  await Promise.all([
+    ...[400, 500, 700].map((w) => document.fonts.load(`${w} 64px ${SANS}`)),
+    document.fonts.load(`300 64px ${SERIF}`),
+    document.fonts.load(`italic 300 64px ${SERIF}`),
+  ]);
   const c = document.createElement('canvas');
   c.width = W;
   c.height = H;
@@ -27,40 +35,47 @@ export async function renderShareCard(s: SessionSummary, siteLabel: string): Pro
   if (!g) throw new Error('No canvas');
   const t = shareCardLines(s);
 
-  g.fillStyle = '#f2f2ef';
+  g.fillStyle = CREAM;
   g.fillRect(0, 0, W, H);
 
-  // Brand.
+  // Brand: mark plus spaced capitals, as in the app header.
   drawLogo(g, 96, 150, 96);
-  g.fillStyle = '#121211';
-  g.font = '800 58px Inter';
+  g.fillStyle = INK;
+  g.font = `700 44px ${SANS}`;
+  g.letterSpacing = '6px';
   g.textBaseline = 'middle';
-  g.fillText('RepCounter', 220, 198);
+  g.fillText('REPCOUNTER', 228, 199);
+  g.letterSpacing = '0px';
 
-  // Card.
-  roundRect(g, 72, 420, W - 144, 900, 56);
-  g.fillStyle = '#0e0e0d';
+  // Card: the blue-grey to sand gradient of the app's video area.
+  roundRect(g, 72, 420, W - 144, 900, 48);
+  const grad = g.createLinearGradient(0, 420, 0, 1320);
+  grad.addColorStop(0, '#7b96ab');
+  grad.addColorStop(0.42, '#a3b1b8');
+  grad.addColorStop(0.72, '#c9c6bb');
+  grad.addColorStop(1, '#ddd2bd');
+  g.fillStyle = grad;
   g.fill();
-  g.fillStyle = '#ffffff';
+  g.fillStyle = INK;
   g.textBaseline = 'alphabetic';
-  g.font = `800 ${t.count.length > 4 ? 250 : 340}px Inter`;
-  g.fillText(t.count, 140, 900);
-  g.font = '600 64px Inter';
-  g.fillStyle = 'rgba(255,255,255,0.75)';
-  g.fillText(t.unit, 148, 1000);
-  g.fillStyle = '#ff5a1f';
-  g.font = '700 70px Inter';
-  fitText(g, t.title, 140, 1160, W - 280);
-  g.fillStyle = 'rgba(255,255,255,0.75)';
-  g.font = '400 52px Inter';
+  g.font = `300 ${t.count.length > 4 ? 280 : 380}px ${SERIF}`;
+  g.fillText(t.count, 132, 900);
+  g.font = `italic 300 72px ${SERIF}`;
+  g.fillStyle = 'rgba(29,29,27,0.72)';
+  g.fillText(t.unit, 144, 1000);
+  g.fillStyle = INK;
+  g.font = `300 76px ${SERIF}`;
+  fitText(g, t.title.toUpperCase(), 140, 1160, W - 280);
+  g.fillStyle = 'rgba(29,29,27,0.72)';
+  g.font = `400 50px ${SANS}`;
   fitText(g, t.detail, 140, 1240, W - 280);
 
   // Footer.
-  g.fillStyle = '#4a4a44';
-  g.font = '400 46px Inter';
+  g.fillStyle = '#55534e';
+  g.font = `italic 300 54px ${SERIF}`;
   g.fillText('Counted from a video, in the browser.', 96, 1560);
-  g.fillStyle = '#121211';
-  g.font = '700 50px Inter';
+  g.fillStyle = INK;
+  g.font = `500 48px ${SANS}`;
   fitText(g, siteLabel, 96, 1640, W - 192);
 
   return new Promise((resolve, reject) => c.toBlob((b) => (b ? resolve(b) : reject(new Error('No image'))), 'image/png'));
@@ -110,12 +125,12 @@ function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number,
 /** The app mark (same paths as the header logo, 24-unit grid). */
 function drawLogo(g: CanvasRenderingContext2D, x: number, y: number, size: number) {
   roundRect(g, x, y, size, size, size * 0.28);
-  g.fillStyle = '#121211';
+  g.fillStyle = INK;
   g.fill();
   const k = (size * 0.6) / 24;
   const ox = x + size * 0.2;
   const oy = y + size * 0.2;
-  g.strokeStyle = '#ff5a1f';
+  g.strokeStyle = '#c9b28c';
   g.lineWidth = 2.6 * k;
   g.lineCap = 'round';
   g.lineJoin = 'round';
@@ -125,7 +140,7 @@ function drawLogo(g: CanvasRenderingContext2D, x: number, y: number, size: numbe
   g.lineTo(ox + 13.5 * k, oy + 14 * k);
   g.lineTo(ox + 19 * k, oy + 6.5 * k);
   g.stroke();
-  g.fillStyle = '#ffffff';
+  g.fillStyle = CREAM;
   for (const [cx, cy] of [[9.5, 10.5], [13.5, 14]]) {
     g.beginPath();
     g.arc(ox + cx * k, oy + cy * k, 1.6 * k, 0, Math.PI * 2);

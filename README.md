@@ -9,6 +9,8 @@ count, log the weight, and get a next-session target.
 Everything runs on your device. Videos are never uploaded or stored; only the
 set summary (date, exercise, weight, reps, effort) is saved to `localStorage`.
 
+**How it all works** (stack, pipeline, lessons learned, tuning): [docs/GUIDE.md](docs/GUIDE.md)
+
 No video handy? **Try a sample set** loads a free side-view squat clip
 ([Pexels 9001924](https://www.pexels.com/video/9001924/), 3 squats) and counts
 it. After saving, **Share** makes a story-sized image of the set (the phone's
@@ -57,12 +59,13 @@ secure page: `localhost`, or the site served over https.
 3. Each rep gets a timestamp you can click to jump to it in the video.
 4. Sets of an exercise saved on the same day are one workout. The next
    workout's target uses that workout's sets at its heaviest weight (so
-   warm-ups don't count): every set at the top of your rep range adds weight;
-   inside the range, aim for one more rep on your weakest set; a set below the
-   range or marked Failed keeps the weight; and if even your best set was 3+
-   reps short of the range, the target drops one weight step. The rep range
-   (3–5, 6–10, 8–12, 12–20 or custom) and weight step are editable per
-   exercise.
+   warm-ups don't count). Reps first, then weight: the target is one more rep
+   than your best set; once your best set reaches the top of the rep range,
+   the weight goes up and the target restarts at the bottom. A set marked
+   Failed blocks the weight increase, and if even your best set was 3+ reps
+   short of the range, the target drops one weight step. The rep range
+   (default 5–8; presets 3–5, 5–8, 5–12, 12–20, or custom) and weight step
+   are editable per exercise.
 5. Any exercise can be logged by hand ("No video? Enter reps by hand"), and
    **+ Add exercise** adds your own (name plus total, per-dumbbell or
    bodyweight). Added exercises are logged by hand only.

@@ -2,66 +2,90 @@
 <!--
   Source for public/og-image.png (the 1200x630 link preview). Re-render with:
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars \
+    --force-device-scale-factor=1 --virtual-time-budget=2000 \
     --window-size=1200,630 --screenshot=public/og-image.png scripts/og-image.html
 -->
 <html>
 <head>
 <meta charset="utf-8" />
 <style>
-  @font-face { font-family: Inter; font-weight: 400; src: url(../node_modules/@fontsource/inter/files/inter-latin-400-normal.woff2); }
-  @font-face { font-family: Inter; font-weight: 600; src: url(../node_modules/@fontsource/inter/files/inter-latin-600-normal.woff2); }
-  @font-face { font-family: Inter; font-weight: 800; src: url(../node_modules/@fontsource/inter/files/inter-latin-800-normal.woff2); }
+  @font-face { font-family: Geist; font-weight: 100 900; src: url(../node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2); }
+  @font-face { font-family: Newsreader; font-weight: 200 800; src: url(../node_modules/@fontsource-variable/newsreader/files/newsreader-latin-opsz-normal.woff2); }
+  @font-face { font-family: Newsreader; font-style: italic; font-weight: 200 800; src: url(../node_modules/@fontsource-variable/newsreader/files/newsreader-latin-opsz-italic.woff2); }
+  * { box-sizing: border-box; }
   html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
-  body { background: #f2f2ef; font-family: Inter, sans-serif; color: #121211; display: flex; align-items: center; gap: 56px; padding: 0 64px; box-sizing: border-box; }
+  body {
+    background: #f1ede6; font-family: Geist, sans-serif; color: #1d1d1b;
+    display: flex; align-items: center; gap: 64px; padding: 0 72px 0 80px;
+    -webkit-font-smoothing: antialiased;
+  }
   .left { flex: 1; }
-  .brand { display: flex; align-items: center; gap: 14px; font-weight: 800; font-size: 30px; letter-spacing: -0.5px; }
-  .mark { width: 52px; height: 52px; border-radius: 14px; background: #121211; display: flex; align-items: center; justify-content: center; }
-  h1 { font-size: 62px; line-height: 1.04; letter-spacing: -2px; font-weight: 800; margin: 36px 0 22px; }
-  .sub { font-size: 25px; color: #4a4a44; line-height: 1.4; }
-  .chips { display: flex; gap: 10px; margin-top: 30px; flex-wrap: wrap; }
-  .chip { border: 1.5px solid #cfcfc8; background: #fff; border-radius: 999px; padding: 9px 18px; font-weight: 600; font-size: 19px; }
-  .stage { width: 420px; height: 520px; border-radius: 28px; background: #0e0e0d; position: relative; overflow: hidden; flex-shrink: 0; }
+  .brand { display: flex; align-items: center; gap: 16px; font-weight: 700; font-size: 22px; letter-spacing: 0.16em; }
+  .mark { width: 48px; height: 48px; border-radius: 13px; background: #1d1d1b; display: flex; align-items: center; justify-content: center; }
+  h1 {
+    font-family: Newsreader, serif; font-weight: 300; text-transform: uppercase;
+    font-size: 74px; line-height: 1.02; letter-spacing: 0.005em; margin: 44px 0 26px;
+  }
+  .sub { font-size: 24px; color: #55534e; line-height: 1.45; max-width: 560px; }
+  .list { margin-top: 34px; font-family: Newsreader, serif; font-style: italic; font-weight: 300; font-size: 26px; color: #55534e; }
+  .list span { color: #a39c8f; padding: 0 6px; font-style: normal; }
+
+  .stage {
+    width: 384px; height: 520px; border-radius: 30px; position: relative; overflow: hidden; flex-shrink: 0;
+    background: linear-gradient(180deg, #7b96ab 0%, #a3b1b8 42%, #c9c6bb 72%, #ddd2bd 100%);
+    box-shadow: 0 30px 60px rgba(60, 50, 30, 0.14);
+  }
   .stage svg { position: absolute; inset: 0; }
-  .badge { position: absolute; top: 22px; left: 22px; background: rgba(255,255,255,0.14); color: #fff; border-radius: 999px; padding: 10px 18px; font-weight: 600; font-size: 22px; }
-  .badge b { font-weight: 800; }
-  .result { position: absolute; left: 22px; right: 22px; bottom: 22px; background: #fff; border-radius: 18px; padding: 16px 20px; display: flex; align-items: baseline; gap: 10px; }
-  .result .n { font-size: 54px; font-weight: 800; letter-spacing: -2px; line-height: 1; }
-  .result .r { font-size: 24px; font-weight: 600; }
-  .result .note { margin-left: auto; font-size: 17px; color: #c2410c; font-weight: 600; }
+  .pill { position: absolute; top: 22px; left: 22px; background: rgba(20, 20, 19, 0.62); color: #fff; border-radius: 999px; padding: 9px 16px; font-weight: 500; font-size: 19px; }
+  .pill b { font-weight: 600; }
+  .pill i { font-style: normal; opacity: 0.55; }
+  .result {
+    position: absolute; left: 20px; right: 20px; bottom: 20px; background: #fbf9f5; border-radius: 20px;
+    padding: 16px 22px 18px; display: flex; align-items: flex-end; justify-content: space-between;
+  }
+  .label { font-family: Newsreader, serif; font-style: italic; font-size: 17px; color: #55534e; }
+  .count { display: flex; align-items: baseline; gap: 8px; margin-top: 2px; }
+  .n { font-family: Newsreader, serif; font-weight: 300; font-size: 76px; line-height: 0.9; letter-spacing: -0.02em; }
+  .r { font-family: Newsreader, serif; font-style: italic; font-weight: 300; font-size: 28px; color: #55534e; }
+  .note { font-size: 15px; font-weight: 500; color: #33452f; background: #e7ece4; border: 1px solid #cdd8c8; border-radius: 999px; padding: 7px 13px; margin-bottom: 6px; }
 </style>
 </head>
 <body>
   <div class="left">
     <div class="brand">
       <span class="mark">
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M5 16.5l4.5-6 4 3.5L19 6.5" stroke="#ff5a1f" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="10.5" r="1.6" fill="#fff"/><circle cx="13.5" cy="14" r="1.6" fill="#fff"/></svg>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M5 16.5l4.5-6 4 3.5L19 6.5" stroke="#c9b28c" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="10.5" r="1.6" fill="#f1ede6"/><circle cx="13.5" cy="14" r="1.6" fill="#f1ede6"/></svg>
       </span>
-      RepCounter
+      REPCOUNTER
     </div>
-    <h1>Count your reps<br />from a video.</h1>
+    <h1>Count reps<br />from a video</h1>
     <div class="sub">Film or upload a set. Pose tracking runs in your browser, and the video never leaves your phone.</div>
-    <div class="chips">
-      <span class="chip">Curls</span><span class="chip">Squats</span><span class="chip">Lateral raises</span><span class="chip">Pull-ups</span>
-    </div>
+    <div class="list">curls<span>·</span>squats<span>·</span>lateral raises<span>·</span>pull-ups</div>
   </div>
   <div class="stage">
-    <!-- Stick figure at the bottom of a squat, side view, with the tracked leg drawn on top. -->
-    <svg width="420" height="520" viewBox="-10 30 420 520">
-      <g stroke="#3a3a36" stroke-width="16" stroke-linecap="round" fill="none">
-        <circle cx="196" cy="118" r="26" fill="#3a3a36" stroke="none" />
-        <path d="M200 150 L176 262" />
-        <path d="M196 170 L262 214" />
+    <!-- Figure at the bottom of a squat, side view, with the tracked hip, knee and ankle on top. -->
+    <svg width="384" height="520" viewBox="0 0 384 520">
+      <g opacity="0.8" stroke="#1d1d1b" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" fill="none">
+        <circle cx="200" cy="104" r="24" fill="#1d1d1b" stroke="none" />
+        <path d="M188 142 L150 238" />
+        <path d="M184 152 L262 186" />
       </g>
-      <path d="M176 262 L268 288 L238 388" stroke="#ff5a1f" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-      <g fill="#fff" stroke="#ff5a1f" stroke-width="5">
-        <circle cx="176" cy="262" r="10" /><circle cx="268" cy="288" r="10" /><circle cx="238" cy="388" r="10" />
+      <path d="M150 238 L248 262 L214 362" stroke="#d4ad6c" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+      <g fill="#fff" stroke="#d4ad6c" stroke-width="5">
+        <circle cx="150" cy="238" r="9" /><circle cx="248" cy="262" r="11" /><circle cx="214" cy="362" r="9" />
       </g>
-      <rect x="270" y="236" rx="16" width="132" height="34" fill="rgba(0,0,0,0.6)" />
-      <text x="336" y="260" fill="#fff" font-family="Inter" font-weight="600" font-size="19" text-anchor="middle">45% hip drop</text>
-      <path d="M120 392 L320 392" stroke="#2a2a27" stroke-width="4" />
+      <rect x="262" y="222" rx="15" width="108" height="30" fill="rgba(20,20,19,0.72)" />
+      <text x="316" y="243" fill="#fff" font-family="Geist" font-weight="600" font-size="15" text-anchor="middle">41% hip drop</text>
+      <path d="M96 366 L300 366" stroke="#1d1d1b" stroke-opacity="0.25" stroke-width="3" stroke-linecap="round" />
     </svg>
-    <div class="badge"><b>6</b> / 6 reps</div>
-    <div class="result"><span class="n">6</span><span class="r">reps</span><span class="note">Good depth</span></div>
+    <div class="pill"><b>6</b> <i>/ 6</i> reps</div>
+    <div class="result">
+      <div>
+        <div class="label">result</div>
+        <div class="count"><span class="n">6</span><span class="r">reps</span></div>
+      </div>
+      <span class="note">Good depth</span>
+    </div>
   </div>
 </body>
 </html>

@@ -80,35 +80,35 @@ function EmptyStage({
         const f = e.dataTransfer.files?.[0];
         if (f) onPickFile(f);
       }}
-      className={`relative flex aspect-[4/5] w-full flex-col items-center justify-center overflow-hidden rounded-2xl bg-stage px-6 text-center transition sm:aspect-[16/11] ${
-        dragging ? 'ring-2 ring-accent ring-offset-2 ring-offset-canvas' : ''
+      className={`stage-gradient relative flex aspect-[4/5] w-full flex-col items-center justify-center overflow-hidden rounded-[20px] px-6 text-center text-ink transition sm:aspect-[16/11] ${
+        dragging ? 'ring-2 ring-ink ring-offset-2 ring-offset-canvas' : ''
       }`}
     >
       {/* Framing guides, a hint of where the body should be. */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-6 sm:inset-8">
         {['left-0 top-0 border-l-2 border-t-2 rounded-tl-xl', 'right-0 top-0 border-r-2 border-t-2 rounded-tr-xl', 'left-0 bottom-0 border-l-2 border-b-2 rounded-bl-xl', 'right-0 bottom-0 border-r-2 border-b-2 rounded-br-xl'].map((c) => (
-          <span key={c} className={`absolute h-8 w-8 border-white/20 ${c}`} />
+          <span key={c} className={`absolute h-8 w-8 border-ink/20 ${c}`} />
         ))}
       </div>
 
-      <div className="relative flex max-w-xs flex-col items-center">
-        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/[0.08] text-white ring-1 ring-white/10">
+      <div className="relative flex max-w-[340px] flex-col items-center">
+        <span className="flex h-14 w-14 items-center justify-center rounded-[14px] bg-ink text-cream">
           {recordable ? <IconCamera size={24} /> : <IconUpload size={24} />}
         </span>
-        <h2 className="mt-5 text-xl font-semibold tracking-tight text-white">
+        <h2 className="display-caps mt-5 text-[26px] leading-tight sm:text-[28px]">
           {recordable ? 'Record or add a set' : 'Add a recorded set'}
         </h2>
-        <p className="mt-1.5 text-sm leading-relaxed text-white/60">
+        <p className="mt-2 text-sm leading-relaxed text-ink/70">
           {recordable
             ? 'Film it here with your camera, or drop in a clip you already have (MOV, MP4, WebM).'
             : 'Drop a clip here or choose one from your device. MOV, MP4 and WebM are supported.'}
         </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2.5">
+        <div className="mt-6 flex flex-wrap justify-center gap-2">
           {recordable && (
             <button
               type="button"
               onClick={() => setCamera(true)}
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-white px-5 text-sm font-semibold text-ink transition hover:bg-white/90"
+              className="inline-flex h-11 items-center gap-2 rounded-full bg-ink px-[18px] text-sm font-medium text-cream transition hover:bg-black sm:px-5"
             >
               <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
               Record a set
@@ -117,10 +117,10 @@ function EmptyStage({
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            className={`inline-flex h-11 items-center gap-2 rounded-xl px-5 text-sm font-semibold transition ${
+            className={`inline-flex h-11 items-center gap-2 rounded-full px-[18px] text-sm font-medium transition sm:px-5 ${
               recordable
-                ? 'bg-white/[0.1] text-white ring-1 ring-white/15 hover:bg-white/[0.16]'
-                : 'bg-white text-ink hover:bg-white/90'
+                ? 'border border-ink/20 bg-white/35 text-ink hover:bg-white/50'
+                : 'bg-ink text-cream hover:bg-black'
             }`}
           >
             <IconUpload size={16} />
@@ -130,11 +130,11 @@ function EmptyStage({
         <button
           type="button"
           onClick={onSample}
-          className="mt-4 text-sm font-semibold text-white/80 underline decoration-white/30 underline-offset-4 transition hover:text-white"
+          className="mt-4 text-sm font-medium text-ink underline decoration-ink/35 underline-offset-4 transition hover:decoration-ink"
         >
           No video? Try a sample set
         </button>
-        <p className="mt-3 text-xs text-white/40">The video stays on this device.</p>
+        <p className="mt-3 text-xs text-ink/50">The video stays on this device.</p>
       </div>
 
       <input
@@ -171,8 +171,11 @@ function LoadedStage({
   const [durationMs, setDurationMs] = useState(0);
   const [hud, setHud] = useState<HudArm[]>([]);
   const [note, setNote] = useState<RepMarker | null>(null);
+  // The draw loop reads the latest markers without restarting.
   const markersRef = useRef(markers);
-  markersRef.current = markers;
+  useEffect(() => {
+    markersRef.current = markers;
+  }, [markers]);
 
   // Draw loop: replay stored analysis for whatever frame is on screen.
   useEffect(() => {
@@ -259,8 +262,8 @@ function LoadedStage({
   };
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-stage">
-      <div className="relative flex justify-center bg-black px-0 sm:px-4 sm:pt-4">
+    <div className="overflow-hidden rounded-[20px] bg-stage">
+      <div className="relative flex justify-center bg-[#141413] px-0 sm:px-4 sm:pt-4">
         <div
           ref={boxRef}
           className="relative max-w-full"
@@ -330,7 +333,7 @@ function LoadedStage({
             {note?.note && !analyzing && lostArms.length === 0 && (
               <span
                 className={`rounded-full px-3 py-1.5 text-[13px] font-semibold shadow ${
-                  note.note.tone === 'warn' ? 'bg-amber-400 text-black' : 'bg-emerald-500 text-white'
+                  note.note.tone === 'warn' ? 'bg-amber-400 text-black' : 'bg-cream/95 text-ink'
                 }`}
               >
                 {note.note.text}

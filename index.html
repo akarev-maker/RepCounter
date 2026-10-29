@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f2f2ef" />
+    <meta name="theme-color" content="#f1ede6" />
     <!-- Add to Home Screen -->
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/icons/icon-180.png" />
@@ -15,6 +15,7 @@
       The page may only fetch from its own site. This blocks MediaPipe's usage
       report (POST to odml.pa.googleapis.com: task type, OS family and timings,
       no video), so nothing leaves the device. ws://localhost is Vite's dev reload.
+      Production builds replace this with a stricter policy (vite.config.ts).
     -->
     <meta http-equiv="Content-Security-Policy" content="connect-src 'self' blob: data: ws://localhost:*" />
     <title>RepCounter AI: free rep counter from video (repcounterai.com)</title>
@@ -61,7 +62,7 @@
       JavaScript). React replaces it on start. Keep it in line with the app.
     -->
     <div id="root">
-      <main style="max-width: 640px; margin: 48px auto; padding: 0 20px; font-family: system-ui, sans-serif; color: #121211">
+      <main style="max-width: 640px; margin: 48px auto; padding: 0 20px; font-family: system-ui, sans-serif; color: #1d1d1b">
         <h1>RepCounter AI: count your reps from a video</h1>
         <p>
           Record a set with your phone or upload a clip, and RepCounter AI counts your reps in the browser

@@ -90,7 +90,7 @@ export function PlayerControls({ videoRef, durationMs, markers, lostSpans, disab
         onClick={toggle}
         disabled={disabled}
         aria-label={playing ? 'Pause' : 'Play'}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-ink transition hover:bg-white/90 disabled:cursor-not-allowed"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cream text-ink transition hover:bg-white disabled:cursor-not-allowed"
       >
         {playing ? <IconPause size={16} /> : <IconPlay size={16} className="translate-x-px" />}
       </button>
@@ -105,7 +105,7 @@ export function PlayerControls({ videoRef, durationMs, markers, lostSpans, disab
               style={{ left: pct(s.startMs), width: `calc(${pct(s.endMs)} - ${pct(s.startMs)})` }}
             />
           ))}
-          <div className="absolute inset-y-0 left-0 rounded-full bg-white/70" style={{ width: pct(tMs) }} />
+          <div className="absolute inset-y-0 left-0 rounded-full bg-[#c9b28c]" style={{ width: pct(tMs) }} />
         </div>
         <input
           type="range"
@@ -133,7 +133,7 @@ export function PlayerControls({ videoRef, durationMs, markers, lostSpans, disab
         ))}
       </div>
 
-      <span className="shrink-0 text-xs font-medium tabular-nums text-white/70">
+      <span className="shrink-0 text-xs font-medium tabular-nums text-cream/70">
         {formatTime(tMs)} / {formatTime(durationMs)}
       </span>
 
@@ -145,7 +145,7 @@ export function PlayerControls({ videoRef, durationMs, markers, lostSpans, disab
             disabled={disabled}
             onClick={() => setSpeed(r)}
             className={`h-7 rounded-md px-2 text-xs font-semibold transition ${
-              rate === r ? 'bg-white text-ink' : 'text-white/70 hover:text-white'
+              rate === r ? 'bg-cream text-ink' : 'text-cream/70 hover:text-cream'
             }`}
           >
             {r}×

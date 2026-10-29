@@ -1,3 +1,5 @@
+> **Historical.** This is the original plan. The code has since changed (React 19, local MediaPipe files, seek-based frame sampling, a 3-state counter, hip drop for squats, one-workout progression with a 5–8 default range). The README and the code are the current reference.
+
 # Design — Workout Rep Analyzer
 
 ## Stack

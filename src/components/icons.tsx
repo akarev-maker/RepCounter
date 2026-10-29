@@ -62,11 +62,6 @@ export const IconPlus = (p: P) => (
     <path d="M12 6v12M6 12h12" />
   </Svg>
 );
-export const IconArrowUpRight = (p: P) => (
-  <Svg {...p}>
-    <path d="M7 17L17 7M9 7h8v8" />
-  </Svg>
-);
 export const IconLock = (p: P) => (
   <Svg {...p}>
     <rect x="5" y="11" width="14" height="9" rx="2" />

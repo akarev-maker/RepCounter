@@ -6,11 +6,30 @@ export function loadSessions(): SessionSummary[] {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as SessionSummary[]) : [];
+    const parsed: unknown = JSON.parse(raw);
+    // Skip entries that would break grouping or rendering (bad dates, missing fields).
+    return Array.isArray(parsed) ? parsed.filter(isSession) : [];
   } catch {
     return [];
   }
+}
+
+function isSession(x: unknown): x is SessionSummary {
+  if (!x || typeof x !== 'object') return false;
+  const s = x as Record<string, unknown>;
+  return (
+    typeof s.id === 'string' &&
+    typeof s.dateISO === 'string' &&
+    Number.isFinite(Date.parse(s.dateISO)) &&
+    typeof s.exerciseId === 'string' &&
+    typeof s.exerciseLabel === 'string' &&
+    typeof s.weight === 'number' &&
+    Number.isFinite(s.weight) &&
+    typeof s.reps === 'number' &&
+    Number.isFinite(s.reps) &&
+    (s.unit === 'lb' || s.unit === 'kg') &&
+    typeof s.effort === 'string'
+  );
 }
 
 function persist(sessions: SessionSummary[]): void {

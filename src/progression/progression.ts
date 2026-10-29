@@ -1,8 +1,8 @@
-import type { ProgressionSettings, SessionSummary, Suggestion } from '../types';
+import type { ProgressionSettings, SessionSummary, Suggestion, Unit } from '../types';
 
 export const DEFAULT_PROGRESSION: ProgressionSettings = {
-  repRangeMin: 8,
-  repRangeMax: 12,
+  repRangeMin: 5,
+  repRangeMax: 8,
   increment: 5,
   unit: 'lb',
 };
@@ -23,6 +23,19 @@ export function groupWorkouts(history: SessionSummary[]): SessionSummary[][] {
   return [...byDay.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1)).map(([, sets]) => sets);
 }
 
+/**
+ * The sets the next target is based on: the latest workout's sets at its
+ * heaviest weight (in the unit of its last set), oldest first. Null with no history.
+ */
+export function workingSets(history: SessionSummary[]): { sets: SessionSummary[]; weight: number; unit: Unit } | null {
+  const workout = groupWorkouts(history)[0];
+  if (!workout) return null;
+  const unit = workout[workout.length - 1].unit;
+  const sameUnit = workout.filter((s) => s.unit === unit);
+  const weight = Math.max(...sameUnit.map((s) => s.weight));
+  return { sets: sameUnit.filter((s) => s.weight === weight), weight, unit };
+}
+
 /** How many reps short of the bottom of the range counts as "far below": the weight drops. */
 const FAR_BELOW = 3;
 
@@ -34,29 +47,25 @@ const FAR_BELOW = 3;
  * warm-up sets don't hold progress back. "Reps" is the weaker arm for
  * both-arm sets.
  *
+ * Reps first, then weight: the target never asks for fewer reps than your
+ * best set at the same weight.
+ *
  *  1. Best working set far below the range (3+ reps short of the bottom):
  *     drop one increment and aim for the bottom of the range.
- *  2. Any set marked Failed, or the weakest set below the range: keep the
- *     weight, aim for one more rep on the weakest set (up to the bottom).
- *  3. Every working set reached the top of the range: add one increment and
- *     start again at the bottom.
- *  4. Otherwise (inside the range): keep the weight, one more rep on the
- *     weakest set.
+ *  2. Best working set reached the top of the range, none marked Failed:
+ *     add one increment and start again at the bottom.
+ *  3. Best set at the top but a set marked Failed: same weight, aim for
+ *     the top again.
+ *  4. Otherwise: same weight, one more rep than the best set.
  *
  * The increment is applied in the unit of the most recent set.
  * Returns null when there is no history.
  */
 export function suggestNext(history: SessionSummary[], settings: ProgressionSettings): Suggestion | null {
-  const workout = groupWorkouts(history)[0];
-  if (!workout) return null;
-
-  const unit = workout[workout.length - 1].unit;
-  const sameUnit = workout.filter((s) => s.unit === unit);
-  const w = Math.max(...sameUnit.map((s) => s.weight));
-  const working = sameUnit.filter((s) => s.weight === w);
-  const reps = working.map((s) => s.reps);
-  const worst = Math.min(...reps);
-  const best = Math.max(...reps);
+  const basis = workingSets(history);
+  if (!basis) return null;
+  const { sets: working, weight: w, unit } = basis;
+  const best = Math.max(...working.map((s) => s.reps));
   const failed = working.some((s) => s.effort === 'failed');
 
   const { repRangeMin: lo, repRangeMax: hi, increment } = settings;
@@ -78,37 +87,48 @@ export function suggestNext(history: SessionSummary[], settings: ProgressionSett
     };
   }
 
-  // Rule 2: failed, or below the range -> same weight, build up.
-  if (failed || worst < lo) {
-    const aim = Math.min(Math.max(worst + 1, 1), worst < lo ? lo : hi);
-    const why = failed ? `a set at ${load} was marked Failed` : `you did ${did}, below your ${range} range`;
-    return {
-      weight: w,
-      unit,
-      reps: aim,
-      reason: `Stay at ${load} and aim for ${aim} reps${eachArm} on every set, because ${why}.`,
-    };
-  }
-
-  // Rule 3: every working set at the top -> add weight.
-  if (worst >= hi) {
+  // Rule 2: best set reached the top -> add weight (unless a set was marked Failed).
+  if (best >= hi && !failed) {
     const next = round(w + increment);
     return {
       weight: next,
       unit,
       reps: lo,
-      reason: `You did ${did}: every set reached the top of your ${range} range${both ? ' on both arms' : ''}. Add ${increment} ${unit} and start again at ${lo} reps.`,
+      reason: `You did ${did}: your best set reached the top of your ${range} range${both ? ' on both arms' : ''}. Add ${increment} ${unit} and start again at ${lo} reps.`,
     };
   }
 
-  // Rule 4: inside the range -> add a rep to the weakest set.
-  const aim = Math.min(worst + 1, hi);
+  // Rule 3: Failed at the top -> same weight, hit the top again.
+  if (best >= hi) {
+    return {
+      weight: w,
+      unit,
+      reps: hi,
+      reason: `You did ${did}, but a set was marked Failed. Stay at ${load} and aim for ${hi} reps${eachArm} again before adding weight.`,
+    };
+  }
+
+  // Rule 4: below or inside the range -> same weight, beat the best set by one rep.
+  const aim = best + 1;
+  const where = best < lo ? `below your ${range} range` : `inside your ${range} range`;
   return {
     weight: w,
     unit,
     reps: aim,
-    reason: `You did ${did}, inside your ${range} range. Keep the weight and aim for ${aim} reps${eachArm} on every set.`,
+    reason: `You did ${did}, ${where}. Keep the weight and aim for ${aim} reps${eachArm}, one more than your best set.`,
   };
+}
+
+/**
+ * The weight field as a number, or null if it can't be saved: empty, not a
+ * number, negative, or 0 for an exercise that has no bodyweight option.
+ */
+export function parseWeight(raw: string, allowBodyweight: boolean): number | null {
+  if (raw.trim() === '') return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 0) return null;
+  if (n === 0 && !allowBodyweight) return null;
+  return n;
 }
 
 /** "25 lb", or "bodyweight" for a weight of 0. */

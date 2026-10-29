@@ -100,17 +100,17 @@ export function SetupPanel(p: Props) {
                   type="button"
                   disabled={locked}
                   onClick={() => p.onExercise(x.id)}
-                  className={`h-9 rounded-full border px-3.5 text-sm font-semibold transition disabled:opacity-50 ${
+                  className={`h-9 rounded-full border px-3.5 text-sm font-medium transition disabled:opacity-50 ${
                     active
-                      ? 'border-ink bg-ink text-white'
-                      : 'border-line-strong bg-surface text-ink-2 hover:border-ink-3'
+                      ? 'border-ink bg-ink text-cream'
+                      : 'border-line-strong bg-transparent text-ink-2 hover:border-ink-3'
                   }`}
                 >
                   {x.label}
                   {x.manual && (
                     <span
                       className={`ml-1.5 rounded px-1 py-px align-middle text-[10px] font-bold uppercase tracking-wide ${
-                        active ? 'bg-white/20 text-white' : 'bg-black/[0.06] text-ink-3'
+                        active ? 'bg-cream/20 text-cream' : 'bg-black/[0.06] text-ink-3'
                       }`}
                     >
                       By hand
@@ -124,7 +124,7 @@ export function SetupPanel(p: Props) {
                 type="button"
                 disabled={locked}
                 onClick={() => setAdding(true)}
-                className="h-9 rounded-full border border-dashed border-line-strong px-3.5 text-sm font-semibold text-ink-2 transition hover:border-ink-3 hover:text-ink disabled:opacity-50"
+                className="h-9 rounded-full border border-dashed border-line-strong px-3.5 text-sm font-medium text-ink-2 transition hover:border-ink-3 hover:text-ink disabled:opacity-50"
               >
                 + Add exercise
               </button>
@@ -132,7 +132,7 @@ export function SetupPanel(p: Props) {
           </div>
           {adding && (
             <form
-              className="mt-3 space-y-3 rounded-xl border border-line bg-canvas/60 p-3.5"
+              className="mt-3 space-y-3 rounded-xl border border-line bg-inset p-3.5"
               onSubmit={(e) => {
                 e.preventDefault();
                 submitAdd();
@@ -146,7 +146,7 @@ export function SetupPanel(p: Props) {
                   maxLength={40}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Bench Press"
-                  className="h-10 w-full rounded-lg border border-line-strong bg-surface px-3 text-sm font-semibold outline-none placeholder:font-normal placeholder:text-ink-3 focus:border-ink focus:ring-4 focus:ring-black/5"
+                  className="h-10 w-full rounded-xl border border-line-strong bg-[#fffdf9] px-3 text-sm font-semibold outline-none placeholder:font-normal placeholder:text-ink-3 focus:border-ink focus:ring-4 focus:ring-black/5"
                 />
               </label>
               <div>
@@ -263,7 +263,7 @@ export function SetupPanel(p: Props) {
             </div>
             <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/[0.07]">
               <div
-                className="h-full rounded-full bg-accent transition-[width] duration-150"
+                className="h-full rounded-full bg-ink transition-[width] duration-150"
                 style={{ width: `${Math.round(p.progress * 100)}%` }}
               />
             </div>

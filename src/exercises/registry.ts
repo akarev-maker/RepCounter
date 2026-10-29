@@ -137,7 +137,7 @@ export const EXERCISES: Record<string, ExerciseDef> = {
     flexEnter: 70,
     extendEnter: 150,
     filmingHint: 'Film from the side or the front, with nothing blocking the working arm.',
-    defaults: { repRangeMin: 8, repRangeMax: 12, increment: 5, unit: 'lb' },
+    defaults: { repRangeMin: 5, repRangeMax: 8, increment: 5, unit: 'lb' },
   },
   /**
    * Hip drop (see `measure`). Two earlier measures failed on the user's own
@@ -189,7 +189,7 @@ export const EXERCISES: Record<string, ExerciseDef> = {
       cue: 'go deeper',
     },
     filmingHint: 'Counts each squat from how far your hips drop, and flags reps that could go deeper. Keep your whole body in frame, from the side or the front.',
-    defaults: { repRangeMin: 8, repRangeMax: 12, increment: 10, unit: 'lb' },
+    defaults: { repRangeMin: 5, repRangeMax: 8, increment: 10, unit: 'lb' },
   },
   /**
    * Shoulder angle (hip-shoulder-elbow): how far the upper arm is raised
@@ -223,7 +223,7 @@ export const EXERCISES: Record<string, ExerciseDef> = {
     extendEnter: 35,
     minRepMs: 600,
     filmingHint: 'Film from the front, with nothing blocking the working arm.',
-    defaults: { repRangeMin: 12, repRangeMax: 20, increment: 2.5, unit: 'lb' },
+    defaults: { repRangeMin: 5, repRangeMax: 8, increment: 2.5, unit: 'lb' },
   },
   /**
    * Elbow angle, both arms together: dumbbells at the shoulders (bent),
@@ -257,7 +257,7 @@ export const EXERCISES: Record<string, ExerciseDef> = {
     extendEnter: 100,
     minRepMs: 600,
     filmingHint: 'Counts each press from your elbow angle, both arms together. Film from the front with room above your head.',
-    defaults: { repRangeMin: 8, repRangeMax: 12, increment: 5, unit: 'lb' },
+    defaults: { repRangeMin: 5, repRangeMax: 8, increment: 5, unit: 'lb' },
   },
   /**
    * Elbow angle, both arms together: hanging (straight) -> chin up (bent)
@@ -287,7 +287,7 @@ export const EXERCISES: Record<string, ExerciseDef> = {
     extendEnter: 140,
     minRepMs: 600,
     filmingHint: 'Counts each pull from your elbow angle. Film from the front or behind with the bar and your arms in frame.',
-    defaults: { repRangeMin: 6, repRangeMax: 10, increment: 5, unit: 'lb' },
+    defaults: { repRangeMin: 5, repRangeMax: 8, increment: 5, unit: 'lb' },
   },
   /** Same movement and thresholds as the pull-up. Not tested on pulldown video. */
   'lat-pulldown': {
@@ -314,7 +314,7 @@ export const EXERCISES: Record<string, ExerciseDef> = {
     extendEnter: 140,
     minRepMs: 600,
     filmingHint: 'Counts each pull from your elbow angle. Film from the front or behind with the bar and your arms in frame.',
-    defaults: { repRangeMin: 8, repRangeMax: 12, increment: 10, unit: 'lb' },
+    defaults: { repRangeMin: 5, repRangeMax: 8, increment: 10, unit: 'lb' },
   },
 };
 
@@ -346,7 +346,7 @@ export function customExerciseDef(c: CustomExercise): ExerciseDef {
     flexEnter: 0,
     extendEnter: 0,
     filmingHint: 'Added by you. Not counted from video: enter your reps by hand.',
-    defaults: { repRangeMin: 8, repRangeMax: 12, increment: c.load === 'per-dumbbell' ? 5 : 10, unit: 'lb' },
+    defaults: { repRangeMin: 5, repRangeMax: 8, increment: c.load === 'per-dumbbell' ? 5 : 10, unit: 'lb' },
   };
 }
 

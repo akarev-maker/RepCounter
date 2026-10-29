@@ -21,11 +21,14 @@ export function containRect(boxW: number, boxH: number, vw: number, vh: number):
   return { x: (boxW - w) / 2, y: (boxH - h) / 2, w, h };
 }
 
-/** Colors per arm. Right uses the app accent; left a contrasting blue. */
+/** Colors per arm. Right uses the app's sand accent; left a contrasting slate blue. */
 export const ARM_COLORS = {
-  right: { solid: '#ff5a1f', fill: 'rgba(255,90,31,0.28)' },
-  left: { solid: '#3b9eff', fill: 'rgba(59,158,255,0.28)' },
+  right: { solid: '#d4ad6c', fill: 'rgba(212,173,108,0.30)' },
+  left: { solid: '#6f9cc0', fill: 'rgba(111,156,192,0.30)' },
 } as const;
+
+/** Timeline and chip color for reps that were counted but could go deeper. */
+export const SHALLOW_COLOR = '#f59e0b';
 
 /** Color for an arm; exercises without sides use the right-arm (accent) color. */
 export const armColor = (side: 'left' | 'right' | null) => ARM_COLORS[side === 'left' ? 'left' : 'right'];
@@ -112,7 +115,7 @@ function drawLimb(ctx: CanvasRenderingContext2D, { frame, color }: OverlayLimb, 
     const ly = b.y + Math.sin(out) * dist;
     const label = frame.label;
     const fontPx = Math.round(13 * unit);
-    ctx.font = `600 ${fontPx}px Inter, system-ui, sans-serif`;
+    ctx.font = `600 ${fontPx}px 'Geist Variable', system-ui, sans-serif`;
     const tw = ctx.measureText(label).width;
     const padX = 7 * unit;
     const h = fontPx + 9 * unit;

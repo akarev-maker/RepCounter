@@ -110,6 +110,8 @@ export async function analyzeVideo(
   }
 
   await seekTo(video, 0);
+  // A cancel during the last frame or the seek back must not return a result.
+  if (signal?.aborted) throw new DOMException('Analysis cancelled', 'AbortError');
 
   if (import.meta.env.DEV) {
     (window as unknown as { __rcPoseFrames?: PoseFrame[] }).__rcPoseFrames = poseFrames;
