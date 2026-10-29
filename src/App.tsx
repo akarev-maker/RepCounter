@@ -3,6 +3,7 @@ import { DEFAULT_EXERCISE_ID, getExercise, type ExerciseDef } from './exercises/
 import { analyzeVideo } from './analysis/analyzeVideo';
 import { otherSideHint, scoreFrames, type OtherSideHint } from './analysis/scoreFrames';
 import { SHALLOW_COLOR, armColor } from './analysis/drawOverlay';
+import { framingAdvice, framingNeed } from './analysis/framing';
 import { bothArmSave } from './counting/balance';
 import { getPoseLandmarker } from './pose/poseLandmarker';
 import { dayOf, parseWeight, suggestNext, workingSets } from './progression/progression';
@@ -220,6 +221,10 @@ export default function App() {
   );
   const suggestion = useMemo(() => suggestNext(history, settings), [history, settings]);
   const basis = useMemo(() => workingSets(history), [history]);
+  const framing = useMemo(
+    () => (exercise.manual ? null : framingNeed(exercise, sidesFor(exercise.sided, effectiveMode, side))),
+    [exercise, effectiveMode, side],
+  );
   // Recomputed on every render so a workout that crosses midnight starts a new day.
   const today = dayOf(new Date().toISOString());
   const todaySets = history
@@ -342,11 +347,13 @@ export default function App() {
         : exercise.limb === 'arms' || sides.length > 1
           ? 'Your arms were'
           : 'Your arm was';
+    // Name the point that was missing most, and what to change; general advice otherwise.
+    const advice = framingAdvice(scan.poseFrames, framingNeed(exercise, sides)) ?? exercise.framingAdvice;
     setAnalysisError(
       best === 0
-        ? `${what} not tracked in this clip. ${exercise.framingAdvice} Good light helps too.`
+        ? `${what} not tracked in this clip. ${advice}`
         : best < UNRELIABLE_TRACKING
-          ? `${what} only tracked in ${Math.round(best * 100)}% of the clip, so the count isn't reliable. ${exercise.framingAdvice} Refilm, or enter the count by hand below.`
+          ? `${what} only tracked in ${Math.round(best * 100)}% of the clip, so the count isn't reliable. ${advice} Refilm, or enter the count by hand below.`
           : null,
     );
   }
@@ -702,6 +709,7 @@ export default function App() {
                 }}
                 onSample={() => void handleSample()}
                 preferCamera={recorded}
+                framing={framing}
                 onRecorded={(f) => {
                   setRecorded(true);
                   setIsSample(false);

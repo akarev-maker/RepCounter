@@ -10,19 +10,29 @@ import {
 } from '../video/recorder';
 import { formatTime } from './formatTime';
 import { IconSwap } from './icons';
+import { checkFrame, framingLabel, type FramingNeed, type FramingStatus } from '../analysis/framing';
+import { createTimestampClock, getPoseLandmarker } from '../pose/poseLandmarker';
 
 interface Props {
   /** Called with the finished recording; it then goes through the normal upload path. */
   onRecorded: (file: File) => void;
   onClose: () => void;
+  /** Body points the chosen exercise needs in view, for the live framing check. */
+  framing: FramingNeed | null;
 }
+
+/** Live framing check: about 3 checks a second on a small copy of the preview. */
+const CHECK_EVERY_MS = 330;
+const CHECK_SIDE = 256;
+
+const statusKey = (s: FramingStatus) => (s.kind === 'fix' ? `${s.point}${s.why}` : s.kind);
 
 type Phase = 'starting' | 'ready' | 'countdown' | 'recording' | 'saving' | 'error';
 
 const COUNTDOWNS = [0, 3, 5, 10] as const;
 const COUNTDOWN_KEY = 'ra.countdown.v1';
 
-export function CameraStage({ onRecorded, onClose }: Props) {
+export function CameraStage({ onRecorded, onClose, framing }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recRef = useRef<ReturnType<typeof startRecording> | null>(null);
@@ -73,6 +83,54 @@ export function CameraStage({ onRecorded, onClose }: Props) {
       streamRef.current = null;
     };
   }, [facing]);
+
+  // Live framing check while the camera is up. The status only changes after
+  // two checks in a row agree, so it doesn't flicker.
+  const [framingStatus, setFramingStatus] = useState<FramingStatus | null>(null);
+  const framingRef = useRef(framing);
+  useEffect(() => {
+    framingRef.current = framing;
+  }, [framing]);
+  const live = phase === 'ready' || phase === 'countdown' || phase === 'recording';
+  useEffect(() => {
+    if (!live || !framingRef.current) return;
+    let stopped = false;
+    let timer = 0;
+    let pending: string | null = null;
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const nextTs = createTimestampClock();
+    const t0 = performance.now();
+    void getPoseLandmarker()
+      .then((landmarker) => {
+        const tick = () => {
+          if (stopped) return;
+          const v = videoRef.current;
+          const need = framingRef.current;
+          if (v && ctx && need && v.readyState >= 2 && v.videoWidth) {
+            const scale = Math.min(1, CHECK_SIDE / Math.max(v.videoWidth, v.videoHeight));
+            canvas.width = Math.round(v.videoWidth * scale);
+            canvas.height = Math.round(v.videoHeight * scale);
+            ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+            const res = landmarker.detectForVideo(canvas, nextTs(performance.now() - t0));
+            const lms = res.landmarks?.[0]?.map((p) => ({ x: p.x, y: p.y, visibility: p.visibility })) ?? null;
+            const s = checkFrame(lms, need);
+            const key = statusKey(s);
+            if (key === pending) setFramingStatus((prev) => (prev && statusKey(prev) === key ? prev : s));
+            pending = key;
+          }
+          timer = window.setTimeout(tick, CHECK_EVERY_MS);
+        };
+        tick();
+      })
+      // No pose model (failed to load): record without the check.
+      .catch(() => {});
+    return () => {
+      stopped = true;
+      window.clearTimeout(timer);
+      setFramingStatus(null);
+    };
+  }, [live, facing]);
 
   // Release everything if the component goes away mid-recording.
   useEffect(() => () => {
@@ -192,8 +250,8 @@ export function CameraStage({ onRecorded, onClose }: Props) {
             className={`absolute inset-0 h-full w-full bg-black object-cover ${facing === 'user' ? '-scale-x-100' : ''}`}
           />
 
-          {/* Top bar */}
-          <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-3">
+          {/* Top bar: Cancel or timer, live framing check, camera switch. */}
+          <div className="absolute inset-x-0 top-0 z-10 grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-2 p-3">
             {phase === 'recording' ? (
               <span className="inline-flex items-center gap-2 rounded-full bg-black/70 px-3 py-1.5 text-[13px] font-semibold text-white backdrop-blur">
                 <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" />
@@ -209,7 +267,19 @@ export function CameraStage({ onRecorded, onClose }: Props) {
                 Cancel
               </button>
             )}
-            {!busy && phase !== 'error' && (
+            <div className="flex justify-center" role="status" aria-live="polite">
+              {framingStatus && live && (
+                <span
+                  className={`inline-flex items-center gap-2 rounded-2xl px-3 py-1.5 text-center text-[13px] font-medium leading-tight shadow backdrop-blur ${
+                    framingStatus.kind === 'ok' ? 'bg-cream/90 text-ink' : 'bg-amber-400 text-black'
+                  }`}
+                >
+                  <span className={`h-2 w-2 shrink-0 rounded-full ${framingStatus.kind === 'ok' ? 'bg-green-600' : 'bg-black/70'}`} />
+                  {framingLabel(framingStatus)}
+                </span>
+              )}
+            </div>
+            {!busy && phase !== 'error' ? (
               <button
                 type="button"
                 onClick={() => setFacing((f) => (f === 'user' ? 'environment' : 'user'))}
@@ -218,6 +288,8 @@ export function CameraStage({ onRecorded, onClose }: Props) {
               >
                 <IconSwap size={18} />
               </button>
+            ) : (
+              <span className="w-9" />
             )}
           </div>
 

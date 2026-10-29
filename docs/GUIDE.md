@@ -36,6 +36,7 @@ flowchart LR
 ### Step 1: Get the video (`src/video/`, `src/components/CameraStage.tsx`)
 - **Upload.** The file becomes a local `blob:` URL that only this tab can see. `probeVideo.ts` reads the first and last 4 MB to find the codec, H.264 or HEVC. It only uses that to explain playback failures (for example, an HEVC clip in a browser that can't decode it).
 - **Record.** `recorder.ts` uses the camera with **audio off**, so your music keeps playing. It saves MP4 when the browser can, otherwise WebM. Browser recordings often have no length in the file header, so `ensureFiniteDuration` makes the browser scan the file to find it.
+- **Live framing check.** While the camera is open, `src/analysis/framing.ts` runs pose tracking about 3 times a second on a small copy of the preview. A pill at the top shows "In frame", "Step back · right wrist out of frame" or "Right elbow hidden · face the phone". It checks the exact points the chosen exercise is measured from, with the same visibility bar as counting. After a scan with poor tracking, the warning names the point that was missing most and what to change.
 - **In-app browsers.** TikTok, Instagram and similar apps often block the camera. `inAppBrowser.ts` detects them and tells you to open the page in Safari or Chrome.
 
 ### Step 2: Load the pose model (`src/pose/poseLandmarker.ts`)

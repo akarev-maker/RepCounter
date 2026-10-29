@@ -7,6 +7,7 @@ import { PlayerControls, type RepMarker, type Span } from './PlayerControls';
 import { IconCamera, IconUpload } from './icons';
 import { CameraStage } from './CameraStage';
 import { canRecord } from '../video/recorder';
+import type { FramingNeed } from '../analysis/framing';
 
 interface Props {
   videoUrl: string | null;
@@ -28,6 +29,8 @@ interface Props {
   onRecorded: (file: File) => void;
   onLoadedMetadata: (video: HTMLVideoElement) => void;
   onDecodeError: () => void;
+  /** Body points the exercise needs in view, for the camera's live framing check. */
+  framing: FramingNeed | null;
 }
 
 interface HudArm {
@@ -43,7 +46,7 @@ const armShort = (side: Side | null) => (side === 'left' ? 'L' : side === 'right
 
 export function VideoStage(props: Props) {
   const { videoUrl } = props;
-  if (!videoUrl) return <EmptyStage onPickFile={props.onPickFile} onSample={props.onSample} onRecorded={props.onRecorded} preferCamera={props.preferCamera} />;
+  if (!videoUrl) return <EmptyStage onPickFile={props.onPickFile} onSample={props.onSample} onRecorded={props.onRecorded} preferCamera={props.preferCamera} framing={props.framing} />;
   return <LoadedStage {...props} videoUrl={videoUrl} />;
 }
 
@@ -52,11 +55,13 @@ function EmptyStage({
   onSample,
   onRecorded,
   preferCamera,
+  framing,
 }: {
   onPickFile: (f: File) => void;
   onSample: () => void;
   onRecorded: (f: File) => void;
   preferCamera?: boolean;
+  framing: FramingNeed | null;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -65,7 +70,7 @@ function EmptyStage({
   const recordable = canRecord() || !window.isSecureContext;
   const [camera, setCamera] = useState(!!preferCamera && recordable);
 
-  if (camera) return <CameraStage onRecorded={onRecorded} onClose={() => setCamera(false)} />;
+  if (camera) return <CameraStage onRecorded={onRecorded} onClose={() => setCamera(false)} framing={framing} />;
 
   return (
     <div
